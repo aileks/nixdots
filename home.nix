@@ -8,7 +8,7 @@
 
 let
   graphicalSessionTarget = "graphical-session.target";
-  repo = "${config.home.homeDirectory}/.nixdots";
+  repo = "${config.home.homeDirectory}/.dotfiles";
   mitishellShellPath = "${pkgs.mitishell}/share/mitishell/shell";
   mitishellLaunchPath = lib.concatStringsSep ":" [
     "${config.home.homeDirectory}/.local/bin"
