@@ -8,7 +8,15 @@
 
 let
   graphicalSessionTarget = "graphical-session.target";
-  repo = "${config.home.homeDirectory}/.dotfiles";
+  repo = "${config.home.homeDirectory}/nixos-btw";
+  mitishellShellPath = "${pkgs.mitishell}/share/mitishell/shell";
+  mitishellLaunchPath = lib.concatStringsSep ":" [
+    "${config.home.homeDirectory}/.local/bin"
+    "${config.home.profileDirectory}/bin"
+    "/run/current-system/sw/bin"
+    mitishellRuntimePath
+  ];
+  mitishellQsBin = "${pkgs.quickshell}/bin/qs";
   cinderGroveGtk = pkgs.cinder-grove-gtk;
   papirusCinderGrove = pkgs.papirus-cinder-grove;
   zenTwilight = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.twilight;
@@ -61,6 +69,8 @@ in
     packages =
       (with pkgs; [
         _7zz
+        gnumake
+        (lib.hiPrio gcc)
         clang
         bat
         eza
@@ -244,7 +254,9 @@ in
       "xdg-desktop-portal".source = ./xdg-desktop-portal;
       "starship.toml".source = ./starship/starship.toml;
       "uwsm/env".text = ''
-        export PATH="$HOME/.local/bin:$HOME/.nix-profile/bin:/run/current-system/sw/bin"
+        export PATH="$HOME/.local/bin:/etc/profiles/per-user/$USER/bin:$PATH"
+        export MITISHELL_QS_PATH="${mitishellShellPath}"
+        export MITISHELL_QS_BIN="${mitishellQsBin}"
         export NIXOS_OZONE_WL=1
         export ELECTRON_OZONE_PLATFORM_HINT=wayland
         export GDK_BACKEND='wayland,x11,*'
@@ -285,10 +297,12 @@ in
         After = [ graphicalSessionTarget ];
       };
       Service = {
-        ExecStart = "${pkgs.quickshell}/bin/quickshell -n -p ${pkgs.mitishell}/share/mitishell/shell";
+        ExecStart = "${pkgs.quickshell}/bin/quickshell -n -p ${mitishellShellPath}";
         Environment = [
+          "MITISHELL_QS_PATH=${mitishellShellPath}"
+          "MITISHELL_QS_BIN=${mitishellQsBin}"
           "MITISHELL_BIN=${lib.getExe pkgs.mitishell}"
-          "PATH=${mitishellRuntimePath}"
+          "PATH=${mitishellLaunchPath}"
         ];
         Restart = "on-failure";
         RestartSec = 2;
