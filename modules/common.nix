@@ -98,8 +98,9 @@
 
   fonts.packages = with pkgs; [
     adwaita-fonts
-    nerd-fonts.adwaita-mono
-    nerd-fonts.geist-mono
+    iosevka-bin
+    nerd-fonts.iosevka
+    nerd-fonts.iosevka-term
     noto-fonts
     noto-fonts-cjk-sans
     noto-fonts-cjk-serif

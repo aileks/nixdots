@@ -2,7 +2,7 @@
   "version": 2,
   "bar": {
     "outputs": [
-      "*"
+      "DP-1"
     ],
     "height": 36,
     "marginTop": 6,
@@ -19,6 +19,7 @@
         "clock"
       ],
       "right": [
+        "updates",
         "status",
         "system",
         "audio",
@@ -29,9 +30,8 @@
         "power"
       ],
       "hidden": [
-        "keyboardLayout",
         "network",
-        "updates"
+        "keyboardLayout"
       ]
     }
   },
@@ -53,11 +53,11 @@
     "reduced": false
   },
   "font": {
-    "family": "GeistMono NF Medium",
-    "monoFamily": "GeistMono Nerd Font Propo"
+    "family": "Iosevka Medium Extended",
+    "monoFamily": "Iosevka Nerd Font Propo"
   },
   "clipboard": {
     "enabled": true,
-    "maxEntries": 10
+    "maxEntries": 15
   }
 }

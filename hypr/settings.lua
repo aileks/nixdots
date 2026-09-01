@@ -56,12 +56,13 @@ hl.config({
 		workspace_swipe_distance = 500,
 	},
 	misc = {
+		focus_on_activate,
 		disable_hyprland_logo = true,
 		disable_splash_rendering = true,
 		focus_on_activate = false,
 		animate_manual_resizes = true,
 		enable_swallow = true,
-		swallow_regex = "^(Alacritty)$",
+		swallow_regex = "^(kitty)$",
 		allow_session_lock_restore = true,
 	},
 	binds = {

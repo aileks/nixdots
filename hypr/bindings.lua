@@ -1,6 +1,7 @@
 ---@diagnostic disable: undefined-global
 
 local app = "uwsm app -- "
+local local_bin = os.getenv("HOME") .. "/.local/bin/"
 local syncobj = " --enable-features=WaylandLinuxDrmSyncobj"
 local repeating = { repeating = true }
 local media = { locked = true, repeating = true }
@@ -17,8 +18,8 @@ bind("SUPER + SHIFT + Space", hl.dsp.window.float(), "Toggle floating")
 bind("SUPER + P", hl.dsp.window.pseudo(), "Toggle pseudotile")
 
 bind("SUPER + Space", hl.dsp.exec_cmd("mitishell launcher"), "Application launcher")
-bind("SUPER + Return", hl.dsp.exec_cmd(app .. "alacritty"), "Terminal")
-bind("SUPER + W", hl.dsp.exec_cmd(app .. "zen-twilight" .. syncobj), "Browser")
+bind("SUPER + Return", hl.dsp.exec_cmd(app .. "kitty"), "Terminal")
+bind("SUPER + W", hl.dsp.exec_cmd(app .. "zen-browser-twilight" .. syncobj), "Browser")
 bind("SUPER + E", hl.dsp.exec_cmd(app .. "nautilus --new-window"), "Files")
 bind("SUPER + S", hl.dsp.exec_cmd(app .. "signal-desktop" .. syncobj), "Signal")
 bind("SUPER + M", hl.dsp.exec_cmd(app .. "fastmail" .. syncobj), "Fastmail")
@@ -30,7 +31,7 @@ bind("SUPER + V", hl.dsp.exec_cmd("mitishell clipboard"), "Clipboard history")
 bind("SUPER + N", hl.dsp.exec_cmd("mitishell notifications dnd"), "Toggle Do Not Disturb")
 bind("SUPER + CTRL + N", hl.dsp.exec_cmd("mitishell night-light toggle"), "Toggle Night Light")
 bind("SUPER + CTRL + R", hl.dsp.exec_cmd("mitishell reminder"), "Set reminder")
-bind("SUPER + SHIFT + slash", hl.dsp.exec_cmd("mitishell keybinds"), "Keybind help")
+bind("SUPER + SHIFT + slash", hl.dsp.exec_cmd(local_bin .. "mitishell keybinds"), "Keybind help")
 bind("SUPER + SHIFT + P", hl.dsp.exec_cmd("mitishell power menu"), "Power menu")
 bind("SUPER + Escape", hl.dsp.exec_cmd("loginctl lock-session"), "Lock session")
 bind("SUPER + O", hl.dsp.exec_cmd("hyprpicker | wl-copy"), "Color picker")
@@ -76,6 +77,9 @@ bind("SUPER + CTRL + Print", hl.dsp.exec_cmd("mitishell capture text"), "Extract
 
 bind("SUPER + Print", hl.dsp.exec_cmd("mitishell record region"), "Region recording")
 bind("SUPER + SHIFT + Print", hl.dsp.exec_cmd("mitishell record output"), "Output recording")
+
+bind("F9", hl.dsp.exec_cmd("voxtype record start"), "Push-to-talk dictation")
+bind("F9", hl.dsp.exec_cmd("voxtype record stop"), "Push-to-talk dictation", { release = true })
 
 bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("mitishell volume up"), "Volume up", media)
 bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("mitishell volume down"), "Volume down", media)

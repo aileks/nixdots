@@ -86,7 +86,8 @@ in
         wget
         zip
         zoxide
-        alacritty
+        mise
+        kitty
         starship
         tmux
         neovim
@@ -164,6 +165,8 @@ in
     file = {
       ".gitconfig".source = ./git/.gitconfig;
       ".gitignore_global".source = ./git/.gitignore_global;
+      ".local/bin/mitishell".source = lib.getExe pkgs.mitishell;
+      ".local/bin/zen-browser-twilight".source = "${zenTwilight}/bin/zen-twilight";
       ".zshrc".source = config.lib.file.mkOutOfStoreSymlink "${repo}/zsh/zshrc";
       ".antidote/antidote.zsh".source = "${pkgs.antidote}/share/antidote/antidote.zsh";
     };
@@ -174,9 +177,9 @@ in
   gtk = {
     enable = true;
     font = {
-      name = "Adwaita Sans";
+      name = "Iosevka Nerd Font Propo";
       size = 11;
-      package = pkgs.adwaita-fonts;
+      package = pkgs.nerd-fonts.iosevka;
     };
     theme = {
       name = "Cinder-Grove-Dark";
@@ -209,9 +212,9 @@ in
       icon-theme = "Papirus-Dark";
       cursor-theme = "Adwaita";
       cursor-size = 24;
-      font-name = "Adwaita Sans 11";
-      monospace-font-name = "GeistMono Nerd Font 11";
-      font-antialiasing = "grayscale";
+      font-name = lib.mkForce "Adwaita Sans 11";
+      monospace-font-name = "Iosevka NFM 11";
+      font-antialiasing = "rgba";
       font-hinting = "slight";
       font-rgba-order = "rgb";
       clock-format = "24h";
@@ -236,7 +239,7 @@ in
     };
 
     configFile = {
-      "alacritty".source = ./alacritty;
+      "kitty".source = ./kitty;
       "bat".source = ./bat;
       "btop".source = ./btop;
       "cava".source = ./cava;
