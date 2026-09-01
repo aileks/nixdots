@@ -234,8 +234,9 @@ in
       "cava".source = ./cava;
       "fastfetch".source = ./fastfetch;
       "fontconfig/fonts.conf".source = ./fontconfig/fonts.conf;
-      "hypr".source = ./hypr;
-      "mitishell/config.json".source = config.lib.file.mkOutOfStoreSymlink "${repo}/mitishell/config.json";
+      "hypr".source = config.lib.file.mkOutOfStoreSymlink "${repo}/hypr";
+      "mitishell/config.json".source =
+        config.lib.file.mkOutOfStoreSymlink "${repo}/mitishell/config.json";
       "nvim".source = config.lib.file.mkOutOfStoreSymlink "${repo}/nvim";
       "qt6ct".source = ./qt6ct;
       "tmux".source = ./tmux;
