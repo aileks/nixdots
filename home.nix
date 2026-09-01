@@ -49,6 +49,7 @@ let
       hyprland
       hyprpicker
       hyprshutdown
+      hyprsunset
       libnotify
       networkmanager
       power-profiles-daemon
