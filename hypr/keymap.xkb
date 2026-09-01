@@ -1,0 +1,13 @@
+xkb_keymap {
+    xkb_keycodes { include "evdev+aliases(qwerty)" };
+    xkb_types { include "complete" };
+    xkb_compat { include "complete" };
+    xkb_symbols {
+        include "pc+us+inet(evdev)"
+        replace key <CAPS> { [ Control_R ], type[group1] = "ONE_LEVEL" };
+        replace key <RCTL> { [ Caps_Lock ], type[group1] = "ONE_LEVEL" };
+        modifier_map Control { <CAPS> };
+        modifier_map Lock { <RCTL> };
+    };
+    xkb_geometry { include "pc(pc105)" };
+};

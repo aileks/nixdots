@@ -1,0 +1,32 @@
+[user]
+	name = Kieran Pedrick
+	email = kieran@aileks.dev
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID5gJUQIMKcvB3j7uilUFSDgKGfD9ZwF9VFzcX4WlSj7
+[commit]
+	gpgsign = true
+	verbose = true
+[tag]
+	gpgsign = true
+	sort = version:refname
+[gpg]
+	format = ssh
+[init]
+	defaultBranch = main
+[core]
+	excludesFile = ~/.gitignore_global
+[push]
+	autoSetupRemote = true
+[pull]
+	rebase = true
+[rebase]
+	autoStash = true
+[fetch]
+	prune = true
+[merge]
+	conflictStyle = zdiff3
+[diff]
+	algorithm = histogram
+[rerere]
+	enabled = true
+[branch]
+	sort = -committerdate

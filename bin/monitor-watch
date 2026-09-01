@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+runtime_directory="${XDG_RUNTIME_DIR:-/run/user/$UID}"
+socket="$runtime_directory/hypr/${HYPRLAND_INSTANCE_SIGNATURE:?}/.socket2.sock"
+configure_monitors="${CONFIGURE_MONITORS_COMMAND:-$HOME/.local/bin/configure-monitors}"
+
+event_stream() {
+  if [[ -n ${MONITOR_EVENT_FILE:-} ]]; then
+    cat "$MONITOR_EVENT_FILE"
+  else
+    socat -u "UNIX-CONNECT:$socket" -
+  fi
+}
+
+while true; do
+  while IFS= read -r event; do
+    case "$event" in
+      monitoraddedv2\>\>* | monitorremovedv2\>\>*) ;;
+      *) continue ;;
+    esac
+
+    while IFS= read -r -t 0.5 event; do
+      :
+    done
+    "$configure_monitors"
+  done < <(event_stream)
+  [[ ${MONITOR_WATCH_ONCE:-0} == 1 ]] && exit 0
+  sleep 1
+done

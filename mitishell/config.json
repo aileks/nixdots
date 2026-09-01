@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "bar": {
+    "outputs": [
+      "*"
+    ],
+    "height": 36,
+    "marginTop": 6,
+    "marginHorizontal": 5,
+    "systemMetrics": "separate",
+    "layout": {
+      "left": [
+        "workspaces",
+        "windowTitle"
+      ],
+      "center": [
+        "weather",
+        "media",
+        "clock"
+      ],
+      "right": [
+        "status",
+        "system",
+        "audio",
+        "bluetooth",
+        "notifications",
+        "quickSettings",
+        "tray",
+        "power"
+      ],
+      "hidden": [
+        "keyboardLayout",
+        "network",
+        "updates"
+      ]
+    }
+  },
+  "clock": {
+    "format": "24h",
+    "showDate": true,
+    "timezones": null
+  },
+  "calendar": {
+    "showWeekNumbers": false
+  },
+  "weather": {
+    "enabled": true,
+    "units": "auto",
+    "location": ""
+  },
+  "motion": {
+    "enabled": true,
+    "reduced": false
+  },
+  "font": {
+    "family": "GeistMono NF Medium",
+    "monoFamily": "GeistMono Nerd Font Propo"
+  },
+  "clipboard": {
+    "enabled": true,
+    "maxEntries": 10
+  }
+}

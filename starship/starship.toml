@@ -1,0 +1,96 @@
+format = """
+$username\
+$hostname\
+$directory\
+$git_branch\
+$git_state\
+$git_status\
+$python\
+$nodejs\
+$cmd_duration\
+$jobs\
+$status\
+$line_break\
+$character"""
+
+scan_timeout = 30
+command_timeout = 500
+add_newline = true
+
+[character]
+success_symbol = "[❯](#58918c)"
+error_symbol = "[❯](#b34a45)"
+
+[directory]
+truncation_length = 1
+truncate_to_repo = false
+style = "#ddd5ca bold"
+format = "[$path]($style)[$read_only]($read_only_style) "
+
+[line_break]
+disabled = false
+
+[git_branch]
+symbol = ""
+style = "#6785a1"
+format = "on [$symbol$branch]($style) "
+
+[git_status]
+style = "#58918c"
+format = '([\[$all_status$ahead_behind\]]($style) )'
+conflicted = "=${count} "
+ahead = "⇡${count} "
+behind = "⇣${count} "
+diverged = "⇕⇡${ahead_count}⇣${behind_count} "
+untracked = "?${count} "
+stashed = "\\$${count} "
+modified = "!${count} "
+staged = "+${count} "
+renamed = "»${count} "
+deleted = "✘${count} "
+
+[git_state]
+style = "#d9a441"
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+
+[cmd_duration]
+min_time = 2_000
+style = "#58918c"
+format = "[$duration]($style) "
+show_milliseconds = false
+
+[status]
+style = "#b34a45"
+format = "[$status]($style) "
+disabled = false
+pipestatus = true
+pipestatus_separator = "|"
+pipestatus_format = '\[$pipestatus\] => [$status]($style) '
+
+[username]
+style_user = "#d9a441 bold"
+style_root = "#b34a45 bold"
+format = "[$user]($style) "
+show_always = false
+
+[hostname]
+style = "#d9a441"
+format = "at [$hostname]($style) "
+ssh_only = true
+
+[jobs]
+style = "#d9a441"
+format = "[$symbol$number]($style) "
+symbol = "✦ "
+threshold = 1
+
+[python]
+style = "#58918c"
+format = '[${symbol}${pyenv_prefix}(${version})(\($virtualenv\))]($style) '
+symbol = ""
+detect_env_vars = ["VIRTUAL_ENV"]
+
+[nodejs]
+style = "#58918c"
+format = "[$symbol($version)]($style) "
+symbol = ""

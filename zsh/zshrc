@@ -1,0 +1,120 @@
+# PATH
+export PATH="$HOME/.local/bin:$HOME/.opencode/bin:$PATH"
+
+# Core environment
+export EDITOR="nvim"
+export VISUAL="$EDITOR"
+export SUDO_EDITOR="$VISUAL"
+export MANPAGER='bat --theme="cinder-grove" -plman'
+export DOCKER_HOST="unix://${XDG_RUNTIME_DIR}/podman/podman.sock"
+bindkey -e
+
+# Terminal line editing
+bindkey '^[[1;5D' backward-word
+bindkey '^[[1;5C' forward-word
+bindkey '^[[5D' backward-word
+bindkey '^[[5C' forward-word
+bindkey '^[Od' backward-word
+bindkey '^[Oc' forward-word
+bindkey '^[[1;5A' history-beginning-search-backward
+bindkey '^[[1;5B' history-beginning-search-forward
+bindkey '^[[H' beginning-of-line
+bindkey '^[[F' end-of-line
+bindkey '^[OH' beginning-of-line
+bindkey '^[OF' end-of-line
+bindkey '^[[1~' beginning-of-line
+bindkey '^[[4~' end-of-line
+bindkey '^[[7~' beginning-of-line
+bindkey '^[[8~' end-of-line
+bindkey '^[[3~' delete-char
+
+# History
+HISTFILE="$HOME/.zsh_history"
+HISTSIZE=50000
+SAVEHIST=10000
+setopt EXTENDED_HISTORY
+setopt HIST_EXPIRE_DUPS_FIRST
+setopt HIST_IGNORE_DUPS
+setopt HIST_IGNORE_SPACE
+setopt HIST_VERIFY
+setopt SHARE_HISTORY
+
+# Completion: case-insensitive + partial-word + substring
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+
+# General aliases
+alias ls="eza --color=always --icons --group-directories-first"
+alias la="eza -al --color=always --icons --group-directories-first"
+alias lt="eza -aT --color=always --icons --group-directories-first"
+alias rm="trash"
+alias c="clear"
+alias fzf="fzf --style full"
+alias ff="fastfetch"
+alias lg="lazygit"
+alias vim="nvim"
+alias docker="podman"
+
+# FZF
+export FZF_CTRL_T_OPTS="
+  --walker-skip .git,node_modules,target
+  --preview 'bat -n --color=always {}'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+export FZF_ALT_C_OPTS="
+  --walker-skip .git,node_modules,target
+  --preview 'eza --tree --color=always --icons {}'"
+export FZF_DEFAULT_OPTS="
+  --color=fg:#ACA49B
+  --color=fg+:#DDD5CA
+  --color=bg:#131210
+  --color=bg+:#34312d
+  --color=hl:#C87546
+  --color=hl+:#E8A64D
+  --color=info:#ACA49B
+  --color=marker:#C87546
+  --color=prompt:#C87546
+  --color=spinner:#DC8853
+  --color=pointer:#D9A441
+  --color=header:#B34A45
+  --color=border:#ACA49B
+  --color=query:#DDD5CA
+  --color=gutter:#131210
+  --highlight-line
+  --info=inline-right
+  --layout=reverse
+  --pointer='█'
+  --scrollbar='▌'
+  --multi
+  --border=top
+"
+export _ZO_FZF_OPTS="
+  $FZF_DEFAULT_OPTS
+  --height=50%
+  --preview 'eza --color=always --icons --group-directories-first {2..}'
+  --preview-window=down,border-top
+  --bind 'ctrl-b:preview-up,ctrl-f:preview-down'
+  --bind 'ctrl-/:change-preview-window(right|hidden|)'"
+
+# Antidote
+for antidote_script in /usr/share/zsh-antidote/antidote.zsh "$HOME/.antidote/antidote.zsh"; do
+  if [[ -f $antidote_script ]]; then
+    source "$antidote_script"
+    break
+  fi
+done
+if (( $+functions[antidote] )); then
+  antidote load "${${(%):-%N}:A:h}/zsh_plugins.txt"
+  source "${${(%):-%N}:A:h}/cinder-grove.zsh"
+fi
+unset antidote_script
+
+# Evals
+eval "$(zoxide init zsh)"
+eval "$(starship init zsh)"
+
+export PNPM_HOME="$HOME/.local/share/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+
+source <(fzf --zsh)
