@@ -49,7 +49,6 @@ let
       hyprland
       hyprpicker
       hyprshutdown
-      hyprsunset
       libnotify
       networkmanager
       power-profiles-daemon
@@ -123,7 +122,6 @@ in
         hyprpaper
         hyprpicker
         hyprpolkitagent
-        hyprsunset
         hyprshutdown
         quickshell
         grim
@@ -279,8 +277,11 @@ in
   services = {
     hypridle.enable = true;
     hyprpaper.enable = true;
-    hyprsunset.enable = true;
     hyprpolkitagent.enable = true;
+    hyprsunset = {
+      enable = true;
+      package = inputs.hyprsunset.packages.${pkgs.stdenv.hostPlatform.system}.default;
+    };
     udiskie = {
       enable = true;
       automount = true;

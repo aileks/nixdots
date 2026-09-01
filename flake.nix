@@ -14,6 +14,8 @@
       url = "github:0xc000022070/zen-browser-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    hyprsunset.url = "github:hyprwm/hyprsunset/v0.4.0";
   };
 
   outputs =
