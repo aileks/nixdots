@@ -29,7 +29,7 @@ stdenvNoCC.mkDerivation {
   meta = {
     description = "Cinder Grove dark GTK theme";
     homepage = "https://github.com/aileks/cinder-grove-gtk";
-    license = with lib.licenses; [ mit lgpl21Only ];
+    license = lib.licenses.lgpl21Only;
     platforms = lib.platforms.linux;
   };
 }

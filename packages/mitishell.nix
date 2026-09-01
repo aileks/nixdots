@@ -30,7 +30,7 @@ buildGoModule rec {
   meta = {
     description = "Personal Hyprland desktop shell";
     homepage = "https://github.com/aileks/mitishell";
-    license = lib.licenses.mit;
+    license = lib.licenses.gpl3Plus;
     mainProgram = "mitishell";
     platforms = lib.platforms.linux;
   };
