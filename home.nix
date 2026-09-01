@@ -177,9 +177,9 @@ in
   gtk = {
     enable = true;
     font = {
-      name = "Iosevka Nerd Font Propo";
+      name = "Maple Mono";
       size = 11;
-      package = pkgs.nerd-fonts.iosevka;
+      package = pkgs.maple-mono.truetype;
     };
     theme = {
       name = "Cinder-Grove-Dark";
@@ -212,8 +212,8 @@ in
       icon-theme = "Papirus-Dark";
       cursor-theme = "Adwaita";
       cursor-size = 24;
-      font-name = lib.mkForce "Adwaita Sans 11";
-      monospace-font-name = "Iosevka NFM 11";
+      font-name = lib.mkForce "Maple Mono 11";
+      monospace-font-name = "Maple Mono NF 11";
       font-antialiasing = "rgba";
       font-hinting = "slight";
       font-rgba-order = "rgb";

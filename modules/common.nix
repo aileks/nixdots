@@ -98,9 +98,8 @@
 
   fonts.packages = with pkgs; [
     adwaita-fonts
-    iosevka-bin
-    nerd-fonts.iosevka
-    nerd-fonts.iosevka-term
+    maple-mono.truetype
+    maple-mono.NF
     noto-fonts
     noto-fonts-cjk-sans
     noto-fonts-cjk-serif

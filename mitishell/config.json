@@ -53,8 +53,8 @@
     "reduced": false
   },
   "font": {
-    "family": "Iosevka Medium Extended",
-    "monoFamily": "Iosevka Nerd Font Propo"
+    "family": "Maple Mono",
+    "monoFamily": ""
   },
   "clipboard": {
     "enabled": true,
