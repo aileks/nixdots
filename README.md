@@ -4,10 +4,10 @@ NixOS 26.05 and Home Manager configuration.
 
 ## Clone
 
-Clone the `nix` branch recursively:
+Clone recursively:
 
 ```bash
-git clone --recurse-submodules https://github.com/aileks/nixdots.git ~/.dotfiles
+git clone --recurse-submodules https://github.com/aileks/nixdots.git ~/.nixdots
 ```
 
 For an existing clone:

@@ -50,7 +50,6 @@
       "wheel"
       "networkmanager"
       "i2c"
-      "input"
     ];
   };
 

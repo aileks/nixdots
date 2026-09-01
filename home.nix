@@ -8,7 +8,7 @@
 
 let
   graphicalSessionTarget = "graphical-session.target";
-  repo = "${config.home.homeDirectory}/nixos-btw";
+  repo = "${config.home.homeDirectory}/.nixdots";
   mitishellShellPath = "${pkgs.mitishell}/share/mitishell/shell";
   mitishellLaunchPath = lib.concatStringsSep ":" [
     "${config.home.homeDirectory}/.local/bin"
@@ -150,7 +150,6 @@ in
         (tesseract5.override { enableLanguages = [ "eng" ]; })
         cliamp
         tmux-sessionizer
-        voxtype-onnx
       ])
       ++ [ zenTwilight ];
 
@@ -249,7 +248,6 @@ in
       "nvim".source = config.lib.file.mkOutOfStoreSymlink "${repo}/nvim";
       "qt6ct".source = ./qt6ct;
       "tmux".source = ./tmux;
-      "voxtype".source = ./voxtype;
       "xdg-desktop-portal".source = ./xdg-desktop-portal;
       "starship.toml".source = ./starship/starship.toml;
       "uwsm/env".text = ''
@@ -371,23 +369,6 @@ in
       Install.WantedBy = [ "sleep.target" ];
     };
 
-    voxtype = {
-      Unit = {
-        Description = "Voxtype push-to-talk voice-to-text daemon";
-        PartOf = [ graphicalSessionTarget ];
-        After = [
-          graphicalSessionTarget
-          "pipewire.service"
-          "pipewire-pulse.service"
-        ];
-      };
-      Service = {
-        ExecStart = "${lib.getExe pkgs.voxtype-onnx} -q daemon";
-        Restart = "on-failure";
-        RestartSec = 5;
-      };
-      Install.WantedBy = [ graphicalSessionTarget ];
-    };
   };
 
   programs.home-manager.enable = true;
