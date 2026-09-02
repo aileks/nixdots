@@ -32,6 +32,7 @@
     }:
     let
       system = "x86_64-linux";
+      installation = import ./installation.nix;
       localPackageNames = [
         "mitishell"
         "cinder-grove-gtk"
@@ -60,7 +61,7 @@
         hostName:
         nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs = { inherit inputs; };
+          specialArgs = { inherit inputs installation; };
           modules = [
             (_: { nixpkgs.overlays = [ overlay ]; })
             ./modules/common.nix
@@ -74,8 +75,8 @@
                   useGlobalPkgs = true;
                   useUserPackages = true;
                   backupCommand = "${pkgs.trash-cli}/bin/trash-put";
-                  extraSpecialArgs = { inherit inputs; };
-                  users.aileks = import ./home.nix;
+                  extraSpecialArgs = { inherit inputs installation; };
+                  users.${installation.user.name} = import ./home.nix;
                 };
               }
             )
@@ -88,6 +89,7 @@
       sourceCheck =
         pkgs.runCommand "nixdots-source-check"
           {
+            INSTALLATION_TEST_JSON = builtins.toJSON installation;
             nativeBuildInputs = with pkgs; [
               findutils
               jq
@@ -96,6 +98,7 @@
               nixfmt
               shellcheck
               shfmt
+              util-linux
               zsh
             ];
           }
@@ -106,8 +109,10 @@
 
             find . -path ./nvim -prune -o -name '*.nix' -print0 \
               | xargs -0 -r nixfmt --check
-            shellcheck bin/install
-            shfmt -d -i 2 -ci -bn bin/install
+            shellcheck bin/* tests/*.bash
+            shfmt -d -i 2 -ci -bn bin/* tests/*.bash
+            bash tests/install.bash
+            bash tests/monitors.bash
             zsh -n zsh/zshrc
             find hypr nvim -type f -name '*.lua' -exec luac -p {} \;
             jq empty mitishell/config.json
@@ -117,6 +122,7 @@
           '';
     in
     {
+      lib = { inherit installation; };
       overlays.default = overlay;
       packages.${system} = localPackages;
       checks.${system} = localPackages // hostChecks // { inherit sourceCheck; };

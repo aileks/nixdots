@@ -1,19 +1,22 @@
-{
-  boot.resumeDevice = "/dev/disk/by-label/swap";
+{ installation, ... }:
 
-  fileSystems."/" = {
-    label = "nixos";
-    fsType = "ext4";
+let
+  inherit (installation.storage) root boot swap;
+in
+{
+  boot.resumeDevice = "/dev/disk/by-label/${swap.label}";
+
+  fileSystems.${root.mountPoint} = {
+    inherit (root) label fsType;
   };
 
-  fileSystems."/boot" = {
-    label = "boot";
-    fsType = "vfat";
+  fileSystems.${boot.mountPoint} = {
+    inherit (boot) label fsType;
     options = [
       "fmask=0022"
       "dmask=0022"
     ];
   };
 
-  swapDevices = [ { label = "swap"; } ];
+  swapDevices = [ { inherit (swap) label; } ];
 }

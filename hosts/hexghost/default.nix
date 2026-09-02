@@ -1,6 +1,7 @@
 {
   config,
   inputs,
+  installation,
   pkgs,
   ...
 }:
@@ -29,7 +30,7 @@ in
     nvidiaSettings = true;
   };
 
-  home-manager.users.aileks.home.packages = [
+  home-manager.users.${installation.user.name}.home.packages = [
     inputs.voxtype.packages.${pkgs.stdenv.hostPlatform.system}.onnx-cuda
   ];
 }

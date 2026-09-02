@@ -1,4 +1,9 @@
-{ pkgs, ... }:
+{
+  installation,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   boot.loader = {
@@ -47,9 +52,11 @@
 
   qt.enable = true;
 
-  users.users.aileks = {
+  users.groups.${installation.user.group}.gid = lib.mkDefault installation.user.gid;
+
+  users.users.${installation.user.name} = {
     isNormalUser = true;
-    uid = 1000;
+    inherit (installation.user) uid group;
     shell = pkgs.zsh;
     extraGroups = [
       "wheel"

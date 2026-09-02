@@ -1,6 +1,7 @@
 {
   config,
   inputs,
+  installation,
   lib,
   pkgs,
   ...
@@ -8,7 +9,7 @@
 
 let
   graphicalSessionTarget = "graphical-session.target";
-  repo = "${config.home.homeDirectory}/.dotfiles";
+  repo = "${config.home.homeDirectory}/${installation.repositoryDirectory}";
   createSymlink = path: config.lib.file.mkOutOfStoreSymlink "${repo}/${path}";
   configFiles = {
     "kitty" = "kitty";
@@ -36,6 +37,23 @@ let
   cinderGroveGtk = pkgs.cinder-grove-gtk;
   papirusCinderGrove = pkgs.papirus-cinder-grove;
   zenTwilight = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.twilight;
+  configureMonitors = pkgs.writeShellApplication {
+    name = "configure-monitors";
+    runtimeInputs = with pkgs; [
+      coreutils
+      hyprland
+      jq
+    ];
+    text = builtins.readFile ./bin/configure-monitors;
+  };
+  monitorWatch = pkgs.writeShellApplication {
+    name = "monitor-watch";
+    runtimeInputs = with pkgs; [
+      coreutils
+      socat
+    ];
+    text = builtins.readFile ./bin/monitor-watch;
+  };
   mitishellRuntimePath = lib.makeBinPath (
     with pkgs;
     [
@@ -61,8 +79,8 @@ let
 in
 {
   home = {
-    username = "aileks";
-    homeDirectory = "/home/aileks";
+    username = installation.user.name;
+    inherit (installation.user) homeDirectory;
     stateVersion = "26.05";
 
     packages =
@@ -163,10 +181,7 @@ in
     file = {
       ".local/bin/mitishell".source = lib.getExe pkgs.mitishell;
       ".local/bin/zen-browser-twilight".source = "${zenTwilight}/bin/zen-twilight";
-      ".zshrc" = {
-        source = createSymlink "zsh/zshrc";
-        force = true;
-      };
+      ".zshrc".source = createSymlink "zsh/zshrc";
       ".antidote/antidote.zsh".source = "${pkgs.antidote}/share/antidote/antidote.zsh";
     };
 
@@ -237,32 +252,27 @@ in
       };
     };
 
-    configFile =
-      lib.mapAttrs (_: path: {
-        source = createSymlink path;
-        force = true;
-      }) configFiles
-      // {
-        "uwsm/env" = {
-          text = ''
-            export PATH="$HOME/.local/bin:/etc/profiles/per-user/$USER/bin:$PATH"
-            export MITISHELL_QS_PATH="${mitishellShellPath}"
-            export MITISHELL_QS_BIN="${mitishellQsBin}"
-            export NIXOS_OZONE_WL=1
-            export ELECTRON_OZONE_PLATFORM_HINT=wayland
-            export GDK_BACKEND='wayland,x11,*'
-            export QT_QPA_PLATFORM='wayland;xcb'
-            export QT_QPA_PLATFORMTHEME=qt6ct
-            export SDL_VIDEODRIVER=wayland
-            export CLUTTER_BACKEND=wayland
-            export XCURSOR_THEME=Adwaita
-            export XCURSOR_SIZE=24
-            export HYPRCURSOR_THEME=Adwaita
-            export HYPRCURSOR_SIZE=24
-            export SSH_AUTH_SOCK="$HOME/.bitwarden-ssh-agent.sock"
-          '';
-        };
+    configFile = lib.mapAttrs (_: path: { source = createSymlink path; }) configFiles // {
+      "uwsm/env" = {
+        text = ''
+          export PATH="$HOME/.local/bin:/etc/profiles/per-user/$USER/bin:$PATH"
+          export MITISHELL_QS_PATH="${mitishellShellPath}"
+          export MITISHELL_QS_BIN="${mitishellQsBin}"
+          export NIXOS_OZONE_WL=1
+          export ELECTRON_OZONE_PLATFORM_HINT=wayland
+          export GDK_BACKEND='wayland,x11,*'
+          export QT_QPA_PLATFORM='wayland;xcb'
+          export QT_QPA_PLATFORMTHEME=qt6ct
+          export SDL_VIDEODRIVER=wayland
+          export CLUTTER_BACKEND=wayland
+          export XCURSOR_THEME=Adwaita
+          export XCURSOR_SIZE=24
+          export HYPRCURSOR_THEME=Adwaita
+          export HYPRCURSOR_SIZE=24
+          export SSH_AUTH_SOCK="$HOME/.bitwarden-ssh-agent.sock"
+        '';
       };
+    };
 
     dataFile."backgrounds/fantasy-woods.jpg".source = ./wallpaper/fantasy-woods.jpg;
   };
@@ -302,6 +312,39 @@ in
         Restart = "on-failure";
         RestartSec = 2;
         Slice = "session-graphical.slice";
+      };
+      Install.WantedBy = [ graphicalSessionTarget ];
+    };
+
+    monitor-setup = {
+      Unit = {
+        Description = "Configure Hyprland monitor geometry";
+        ConditionEnvironment = "WAYLAND_DISPLAY";
+        PartOf = [ graphicalSessionTarget ];
+        After = [ graphicalSessionTarget ];
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = lib.getExe configureMonitors;
+      };
+      Install.WantedBy = [ graphicalSessionTarget ];
+    };
+
+    monitor-watch = {
+      Unit = {
+        Description = "Reconcile Hyprland monitor topology after hotplug";
+        ConditionEnvironment = "WAYLAND_DISPLAY";
+        PartOf = [ graphicalSessionTarget ];
+        After = [
+          graphicalSessionTarget
+          "monitor-setup.service"
+        ];
+      };
+      Service = {
+        ExecStart = lib.getExe monitorWatch;
+        Environment = "CONFIGURE_MONITORS_COMMAND=${lib.getExe configureMonitors}";
+        Restart = "on-failure";
+        RestartSec = 1;
       };
       Install.WantedBy = [ graphicalSessionTarget ];
     };

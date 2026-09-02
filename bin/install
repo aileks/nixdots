@@ -3,8 +3,9 @@
 set -Eeuo pipefail
 
 target_root=/mnt
-check_only=0
+should_only_check=0
 machine_hostname=
+efi_variables_path=${NIXDOTS_EFI_VARIABLES_PATH:-/sys/firmware/efi/efivars}
 
 usage() {
   cat <<'EOF'
@@ -20,10 +21,6 @@ fail() {
   exit 1
 }
 
-note() {
-  printf '%s\n' "$*"
-}
-
 while (($# > 0)); do
   case "$1" in
     --root)
@@ -32,7 +29,7 @@ while (($# > 0)); do
       shift 2
       ;;
     --check-only)
-      check_only=1
+      should_only_check=1
       shift
       ;;
     --hostname)
@@ -51,9 +48,9 @@ while (($# > 0)); do
 done
 
 ((EUID == 0)) || fail "run this installer as root"
-[[ -d /sys/firmware/efi/efivars ]] || fail "the live ISO must be booted in UEFI mode"
+[[ -d $efi_variables_path ]] || fail "the live ISO must be booted in UEFI mode"
 
-for command in blkid findmnt git nixos-enter nixos-generate-config nixos-install readlink swapon; do
+for command in blkid chown findmnt git install jq nix nixos-enter nixos-generate-config nixos-install readlink swapon; do
   command -v "$command" >/dev/null || fail "required command is missing: $command"
 done
 
@@ -61,21 +58,41 @@ target_root=$(readlink -f "$target_root")
 [[ -d $target_root ]] || fail "target root does not exist: $target_root"
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
-expected_repo="$target_root/home/aileks/.dotfiles"
+installation_json=$(nix eval --json "$repo_root#lib.installation") \
+  || fail "could not read installation settings from the flake"
+
+user_name=$(jq -er '.user.name' <<<"$installation_json")
+user_uid=$(jq -er '.user.uid' <<<"$installation_json")
+user_gid=$(jq -er '.user.gid' <<<"$installation_json")
+user_home=$(jq -er '.user.homeDirectory' <<<"$installation_json")
+repository_directory=$(jq -er '.repositoryDirectory' <<<"$installation_json")
+root_label=$(jq -er '.storage.root.label' <<<"$installation_json")
+root_filesystem_type=$(jq -er '.storage.root.fsType' <<<"$installation_json")
+root_mount_point=$(jq -er '.storage.root.mountPoint' <<<"$installation_json")
+boot_label=$(jq -er '.storage.boot.label' <<<"$installation_json")
+boot_filesystem_type=$(jq -er '.storage.boot.fsType' <<<"$installation_json")
+boot_mount_point=$(jq -er '.storage.boot.mountPoint' <<<"$installation_json")
+swap_label=$(jq -er '.storage.swap.label' <<<"$installation_json")
+
+target_home="${target_root%/}$user_home"
+expected_repo="$target_home/$repository_directory"
 [[ $repo_root == "$expected_repo" ]] \
   || fail "clone the repository to $expected_repo before running this script"
 
 declare -A label_devices
-for label in nixos boot swap; do
+for label in "$root_label" "$boot_label" "$swap_label"; do
   mapfile -t devices < <(blkid -t "LABEL=$label" -o device)
   ((${#devices[@]} == 1)) \
     || fail "expected exactly one filesystem labeled '$label', found ${#devices[@]}"
   label_devices[$label]=$(readlink -f "${devices[0]}")
 done
 
-[[ ${label_devices[nixos]} != "${label_devices[boot]}" ]] || fail "nixos and boot labels resolve to the same device"
-[[ ${label_devices[nixos]} != "${label_devices[swap]}" ]] || fail "nixos and swap labels resolve to the same device"
-[[ ${label_devices[boot]} != "${label_devices[swap]}" ]] || fail "boot and swap labels resolve to the same device"
+[[ ${label_devices[$root_label]} != "${label_devices[$boot_label]}" ]] \
+  || fail "$root_label and $boot_label labels resolve to the same device"
+[[ ${label_devices[$root_label]} != "${label_devices[$swap_label]}" ]] \
+  || fail "$root_label and $swap_label labels resolve to the same device"
+[[ ${label_devices[$boot_label]} != "${label_devices[$swap_label]}" ]] \
+  || fail "$boot_label and $swap_label labels resolve to the same device"
 
 check_mount() {
   local mountpoint=$1 label=$2 expected_type=$3 source filesystem_type
@@ -88,38 +105,45 @@ check_mount() {
     || fail "$mountpoint must use $expected_type, found $filesystem_type"
 }
 
-check_mount "$target_root" nixos ext4
-check_mount "$target_root/boot" boot vfat
+root_mount_path=$(readlink -f "${target_root%/}$root_mount_point")
+boot_mount_path=$(readlink -f "${target_root%/}$boot_mount_point")
+check_mount "$root_mount_path" "$root_label" "$root_filesystem_type"
+check_mount "$boot_mount_path" "$boot_label" "$boot_filesystem_type"
 
-swap_active=0
+is_swap_active=0
 while IFS= read -r swap_device; do
-  if [[ $(readlink -f "$swap_device") == "${label_devices[swap]}" ]]; then
-    swap_active=1
+  if [[ $(readlink -f "$swap_device") == "${label_devices[$swap_label]}" ]]; then
+    is_swap_active=1
     break
   fi
 done < <(swapon --noheadings --raw --show=NAME)
-((swap_active)) || fail "the filesystem labeled 'swap' is not active"
+((is_swap_active)) || fail "the filesystem labeled '$swap_label' is not active"
 
 [[ -f $repo_root/.gitmodules ]] || fail "the repository is missing .gitmodules"
-submodule_status=$(git -c safe.directory='*' -C "$repo_root" submodule status --recursive)
+submodule_status=$(git -c "safe.directory=$repo_root" -C "$repo_root" submodule status --recursive)
 [[ -n $submodule_status ]] || fail "no submodule status was returned"
 if grep -Eq '^[-+U]' <<<"$submodule_status"; then
   fail "initialize the pinned submodules with: git submodule update --init --recursive"
 fi
 
-note "Preflight passed: labeled storage, mounts, swap, UEFI, and submodules are ready."
-((check_only == 0)) || exit 0
-
 if [[ -z $machine_hostname ]]; then
-  read -r -p "Hostname: " machine_hostname
+  if ((should_only_check == 0)); then
+    read -r -p "Hostname: " machine_hostname
+  fi
 fi
-[[ $machine_hostname =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]] \
-  || fail "hostname must contain 1-63 lowercase letters, numbers, or internal hyphens"
 
-machine_dir="$repo_root/hosts/$machine_hostname"
-[[ -f $machine_dir/default.nix ]] || fail "host is not declared: $machine_hostname"
-[[ -f $machine_dir/hardware-configuration.nix ]] \
-  || fail "host is missing hardware-configuration.nix: $machine_hostname"
+if [[ -n $machine_hostname ]]; then
+  [[ $machine_hostname =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]] \
+    || fail "hostname must contain 1-63 lowercase letters, numbers, or internal hyphens"
+
+  machine_dir="$repo_root/hosts/$machine_hostname"
+  [[ -f $machine_dir/default.nix ]] || fail "host is not declared: $machine_hostname"
+  [[ -f $machine_dir/hardware-configuration.nix ]] \
+    || fail "host is missing hardware-configuration.nix: $machine_hostname"
+fi
+
+printf '%s\n' "Preflight passed: labeled storage, mounts, swap, UEFI, and submodules are ready."
+((should_only_check == 0)) || exit 0
 
 hardware_tmp=$(mktemp)
 cleanup() {
@@ -133,15 +157,16 @@ nixos-generate-config \
   --show-hardware-config >"$hardware_tmp"
 install -m 0644 "$hardware_tmp" "$machine_dir/hardware-configuration.nix"
 
-note "Installing '$machine_hostname'..."
+printf "Installing '%s'...\n" "$machine_hostname"
 nixos-install \
   --root "$target_root" \
   --flake "$repo_root#$machine_hostname" \
   --no-root-passwd
 
-chown -R 1000:100 "$target_root/home/aileks"
+chown "$user_uid:$user_gid" "$target_home"
+chown -R "$user_uid:$user_gid" "$repo_root"
 
-note "Set the aileks login password."
-nixos-enter --root "$target_root" -- passwd aileks
+printf "Set the %s login password.\n" "$user_name"
+nixos-enter --root "$target_root" -- passwd "$user_name"
 
-note "Installation complete. Review the generated hardware file, then reboot when ready."
+printf '%s\n' "Installation complete. Review the generated hardware file, then reboot when ready."
