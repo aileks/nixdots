@@ -9,6 +9,22 @@
 let
   graphicalSessionTarget = "graphical-session.target";
   repo = "${config.home.homeDirectory}/.dotfiles";
+  createSymlink = path: config.lib.file.mkOutOfStoreSymlink "${repo}/${path}";
+  configFiles = {
+    "kitty" = "kitty";
+    "bat" = "bat";
+    "btop" = "btop";
+    "cava" = "cava";
+    "fastfetch" = "fastfetch";
+    "fontconfig/fonts.conf" = "fontconfig/fonts.conf";
+    "hypr" = "hypr";
+    "mitishell/config.json" = "mitishell/config.json";
+    "nvim" = "nvim";
+    "qt6ct" = "qt6ct";
+    "tmux" = "tmux";
+    "xdg-desktop-portal" = "xdg-desktop-portal";
+    "starship.toml" = "starship/starship.toml";
+  };
   mitishellShellPath = "${pkgs.mitishell}/share/mitishell/shell";
   mitishellLaunchPath = lib.concatStringsSep ":" [
     "${config.home.homeDirectory}/.local/bin"
@@ -163,11 +179,9 @@ in
     };
 
     file = {
-      ".gitconfig".source = ./git/.gitconfig;
-      ".gitignore_global".source = ./git/.gitignore_global;
       ".local/bin/mitishell".source = lib.getExe pkgs.mitishell;
       ".local/bin/zen-browser-twilight".source = "${zenTwilight}/bin/zen-twilight";
-      ".zshrc".source = config.lib.file.mkOutOfStoreSymlink "${repo}/zsh/zshrc";
+      ".zshrc".source = createSymlink "zsh/zshrc";
       ".antidote/antidote.zsh".source = "${pkgs.antidote}/share/antidote/antidote.zsh";
     };
 
@@ -238,21 +252,7 @@ in
       };
     };
 
-    configFile = {
-      "kitty".source = ./kitty;
-      "bat".source = ./bat;
-      "btop".source = ./btop;
-      "cava".source = ./cava;
-      "fastfetch".source = ./fastfetch;
-      "fontconfig/fonts.conf".source = ./fontconfig/fonts.conf;
-      "hypr".source = config.lib.file.mkOutOfStoreSymlink "${repo}/hypr";
-      "mitishell/config.json".source =
-        config.lib.file.mkOutOfStoreSymlink "${repo}/mitishell/config.json";
-      "nvim".source = config.lib.file.mkOutOfStoreSymlink "${repo}/nvim";
-      "qt6ct".source = ./qt6ct;
-      "tmux".source = ./tmux;
-      "xdg-desktop-portal".source = ./xdg-desktop-portal;
-      "starship.toml".source = ./starship/starship.toml;
+    configFile = lib.mapAttrs (_: path: { source = createSymlink path; }) configFiles // {
       "uwsm/env".text = ''
         export PATH="$HOME/.local/bin:/etc/profiles/per-user/$USER/bin:$PATH"
         export MITISHELL_QS_PATH="${mitishellShellPath}"
