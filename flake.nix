@@ -109,6 +109,11 @@
       };
       formatter.${system} = pkgs.nixfmt-tree;
 
-      nixosConfigurations.machine = machine;
+      nixosConfigurations = {
+        inherit machine;
+      }
+      // {
+        "${machine.config.networking.hostName}" = machine;
+      };
     };
 }
