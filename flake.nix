@@ -16,6 +16,11 @@
     };
 
     hyprsunset.url = "github:hyprwm/hyprsunset/v0.4.0";
+
+    voxtype = {
+      url = "github:peteonrails/voxtype/v1.0.1";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -47,28 +52,39 @@
         config.allowUnfree = true;
       };
       localPackages = nixpkgs.lib.genAttrs localPackageNames (name: pkgs.${name});
-      machine = nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = { inherit inputs; };
-        modules = [
-          (_: { nixpkgs.overlays = [ overlay ]; })
-          ./modules/common.nix
-          ./hosts/machine
-          home-manager.nixosModules.home-manager
-          (
-            { pkgs, ... }:
-            {
-              home-manager = {
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                backupCommand = "${pkgs.trash-cli}/bin/trash-put";
-                extraSpecialArgs = { inherit inputs; };
-                users.aileks = import ./home.nix;
-              };
-            }
-          )
-        ];
-      };
+      hostNames = [
+        "nixghost"
+        "hexghost"
+      ];
+      mkHost =
+        hostName:
+        nixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = { inherit inputs; };
+          modules = [
+            (_: { nixpkgs.overlays = [ overlay ]; })
+            ./modules/common.nix
+            ./modules/storage.nix
+            (./hosts + "/${hostName}")
+            home-manager.nixosModules.home-manager
+            (
+              { pkgs, ... }:
+              {
+                home-manager = {
+                  useGlobalPkgs = true;
+                  useUserPackages = true;
+                  backupCommand = "${pkgs.trash-cli}/bin/trash-put";
+                  extraSpecialArgs = { inherit inputs; };
+                  users.aileks = import ./home.nix;
+                };
+              }
+            )
+          ];
+        };
+      hosts = nixpkgs.lib.genAttrs hostNames mkHost;
+      hostChecks = nixpkgs.lib.mapAttrs' (
+        hostName: host: nixpkgs.lib.nameValuePair "nixos-${hostName}" host.config.system.build.toplevel
+      ) hosts;
       sourceCheck =
         pkgs.runCommand "nixdots-source-check"
           {
@@ -103,17 +119,9 @@
     {
       overlays.default = overlay;
       packages.${system} = localPackages;
-      checks.${system} = localPackages // {
-        inherit sourceCheck;
-        machine = machine.config.system.build.toplevel;
-      };
+      checks.${system} = localPackages // hostChecks // { inherit sourceCheck; };
       formatter.${system} = pkgs.nixfmt-tree;
 
-      nixosConfigurations = {
-        inherit machine;
-      }
-      // {
-        "${machine.config.networking.hostName}" = machine;
-      };
+      nixosConfigurations = hosts;
     };
 }

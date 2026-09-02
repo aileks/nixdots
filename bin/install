@@ -116,30 +116,16 @@ fi
 [[ $machine_hostname =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]] \
   || fail "hostname must contain 1-63 lowercase letters, numbers, or internal hyphens"
 
-enable_nvidia=false
-for vendor_file in /sys/bus/pci/devices/*/vendor; do
-  [[ -f $vendor_file ]] || continue
-  if [[ $(<"$vendor_file") == 0x10de ]]; then
-    enable_nvidia=true
-    note "NVIDIA hardware detected; enabling the open NVIDIA kernel modules."
-    break
-  fi
-done
-
-machine_dir="$repo_root/hosts/machine"
-gpu_file="$machine_dir/gpu.nix"
-grep -q '^  enableNvidia = \(true\|false\);$' "$gpu_file" || fail "could not locate enableNvidia in $gpu_file"
-sed -i -E "s/^  enableNvidia = (true|false);$/  enableNvidia = $enable_nvidia;/" "$gpu_file"
+machine_dir="$repo_root/hosts/$machine_hostname"
+[[ -f $machine_dir/default.nix ]] || fail "host is not declared: $machine_hostname"
+[[ -f $machine_dir/hardware-configuration.nix ]] \
+  || fail "host is missing hardware-configuration.nix: $machine_hostname"
 
 hardware_tmp=$(mktemp)
-hostname_tmp=$(mktemp)
 cleanup() {
-  rm -f "$hardware_tmp" "$hostname_tmp"
+  rm -f "$hardware_tmp"
 }
 trap cleanup EXIT
-
-printf '{ networking.hostName = "%s"; }\n' "$machine_hostname" >"$hostname_tmp"
-install -m 0644 "$hostname_tmp" "$machine_dir/hostname.nix"
 
 nixos-generate-config \
   --root "$target_root" \
@@ -147,10 +133,10 @@ nixos-generate-config \
   --show-hardware-config >"$hardware_tmp"
 install -m 0644 "$hardware_tmp" "$machine_dir/hardware-configuration.nix"
 
-note "Installing '$machine_hostname' (NVIDIA open modules: $enable_nvidia)..."
+note "Installing '$machine_hostname'..."
 nixos-install \
   --root "$target_root" \
-  --flake "$repo_root#machine" \
+  --flake "$repo_root#$machine_hostname" \
   --no-root-passwd
 
 chown -R 1000:100 "$target_root/home/aileks"
@@ -158,4 +144,4 @@ chown -R 1000:100 "$target_root/home/aileks"
 note "Set the aileks login password."
 nixos-enter --root "$target_root" -- passwd aileks
 
-note "Installation complete. Review the generated hardware and GPU files, then reboot when ready."
+note "Installation complete. Review the generated hardware file, then reboot when ready."

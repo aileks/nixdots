@@ -26,6 +26,10 @@
   ];
   nixpkgs.config.allowUnfree = true;
 
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+  hardware.graphics.enable = true;
+  system.stateVersion = "26.05";
+
   hardware = {
     i2c.enable = true;
     bluetooth = {
