@@ -1,23 +1,14 @@
 {
   "version": 2,
   "bar": {
-    "outputs": [
-      "DP-1"
-    ],
+    "outputs": ["*"],
     "height": 36,
     "marginTop": 6,
     "marginHorizontal": 5,
     "systemMetrics": "separate",
     "layout": {
-      "left": [
-        "workspaces",
-        "windowTitle"
-      ],
-      "center": [
-        "weather",
-        "media",
-        "clock"
-      ],
+      "left": ["workspaces", "windowTitle"],
+      "center": ["weather", "media", "clock"],
       "right": [
         "updates",
         "status",
@@ -29,10 +20,7 @@
         "tray",
         "power"
       ],
-      "hidden": [
-        "network",
-        "keyboardLayout"
-      ]
+      "hidden": ["network", "keyboardLayout"]
     }
   },
   "clock": {
