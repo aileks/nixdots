@@ -1,0 +1,161 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+target_root=/mnt
+check_only=0
+machine_hostname=
+
+usage() {
+  cat <<'EOF'
+Usage: sudo ./bin/install [--root PATH] [--hostname NAME] [--check-only]
+
+Install the configured system into an already mounted NixOS target. The script never
+partitions, formats, or reboots the machine.
+EOF
+}
+
+fail() {
+  printf 'error: %s\n' "$*" >&2
+  exit 1
+}
+
+note() {
+  printf '%s\n' "$*"
+}
+
+while (($# > 0)); do
+  case "$1" in
+    --root)
+      (($# >= 2)) || fail "--root requires a path"
+      target_root=$2
+      shift 2
+      ;;
+    --check-only)
+      check_only=1
+      shift
+      ;;
+    --hostname)
+      (($# >= 2)) || fail "--hostname requires a name"
+      machine_hostname=$2
+      shift 2
+      ;;
+    --help | -h)
+      usage
+      exit 0
+      ;;
+    *)
+      fail "unknown argument: $1"
+      ;;
+  esac
+done
+
+((EUID == 0)) || fail "run this installer as root"
+[[ -d /sys/firmware/efi/efivars ]] || fail "the live ISO must be booted in UEFI mode"
+
+for command in blkid findmnt git nixos-enter nixos-generate-config nixos-install readlink swapon; do
+  command -v "$command" >/dev/null || fail "required command is missing: $command"
+done
+
+target_root=$(readlink -f "$target_root")
+[[ -d $target_root ]] || fail "target root does not exist: $target_root"
+
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
+expected_repo="$target_root/home/aileks/.dotfiles"
+[[ $repo_root == "$expected_repo" ]] \
+  || fail "clone the repository to $expected_repo before running this script"
+
+declare -A label_devices
+for label in nixos boot swap; do
+  mapfile -t devices < <(blkid -t "LABEL=$label" -o device)
+  ((${#devices[@]} == 1)) \
+    || fail "expected exactly one filesystem labeled '$label', found ${#devices[@]}"
+  label_devices[$label]=$(readlink -f "${devices[0]}")
+done
+
+[[ ${label_devices[nixos]} != "${label_devices[boot]}" ]] || fail "nixos and boot labels resolve to the same device"
+[[ ${label_devices[nixos]} != "${label_devices[swap]}" ]] || fail "nixos and swap labels resolve to the same device"
+[[ ${label_devices[boot]} != "${label_devices[swap]}" ]] || fail "boot and swap labels resolve to the same device"
+
+check_mount() {
+  local mountpoint=$1 label=$2 expected_type=$3 source filesystem_type
+  source=$(findmnt --noheadings --output SOURCE --target "$mountpoint" 2>/dev/null) \
+    || fail "$mountpoint is not mounted"
+  filesystem_type=$(findmnt --noheadings --output FSTYPE --target "$mountpoint")
+  [[ $(readlink -f "$source") == "${label_devices[$label]}" ]] \
+    || fail "$mountpoint is not mounted from the '$label' filesystem"
+  [[ $filesystem_type == "$expected_type" ]] \
+    || fail "$mountpoint must use $expected_type, found $filesystem_type"
+}
+
+check_mount "$target_root" nixos ext4
+check_mount "$target_root/boot" boot vfat
+
+swap_active=0
+while IFS= read -r swap_device; do
+  if [[ $(readlink -f "$swap_device") == "${label_devices[swap]}" ]]; then
+    swap_active=1
+    break
+  fi
+done < <(swapon --noheadings --raw --show=NAME)
+((swap_active)) || fail "the filesystem labeled 'swap' is not active"
+
+[[ -f $repo_root/.gitmodules ]] || fail "the repository is missing .gitmodules"
+submodule_status=$(git -c safe.directory='*' -C "$repo_root" submodule status --recursive)
+[[ -n $submodule_status ]] || fail "no submodule status was returned"
+if grep -Eq '^[-+U]' <<<"$submodule_status"; then
+  fail "initialize the pinned submodules with: git submodule update --init --recursive"
+fi
+
+note "Preflight passed: labeled storage, mounts, swap, UEFI, and submodules are ready."
+((check_only == 0)) || exit 0
+
+if [[ -z $machine_hostname ]]; then
+  read -r -p "Hostname: " machine_hostname
+fi
+[[ $machine_hostname =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]] \
+  || fail "hostname must contain 1-63 lowercase letters, numbers, or internal hyphens"
+
+enable_nvidia=false
+for vendor_file in /sys/bus/pci/devices/*/vendor; do
+  [[ -f $vendor_file ]] || continue
+  if [[ $(<"$vendor_file") == 0x10de ]]; then
+    enable_nvidia=true
+    note "NVIDIA hardware detected; enabling the open NVIDIA kernel modules."
+    break
+  fi
+done
+
+machine_dir="$repo_root/hosts/machine"
+gpu_file="$machine_dir/gpu.nix"
+grep -q '^  enableNvidia = \(true\|false\);$' "$gpu_file" || fail "could not locate enableNvidia in $gpu_file"
+sed -i -E "s/^  enableNvidia = (true|false);$/  enableNvidia = $enable_nvidia;/" "$gpu_file"
+
+hardware_tmp=$(mktemp)
+hostname_tmp=$(mktemp)
+cleanup() {
+  rm -f "$hardware_tmp" "$hostname_tmp"
+}
+trap cleanup EXIT
+
+printf '{ networking.hostName = "%s"; }\n' "$machine_hostname" >"$hostname_tmp"
+install -m 0644 "$hostname_tmp" "$machine_dir/hostname.nix"
+
+nixos-generate-config \
+  --root "$target_root" \
+  --no-filesystems \
+  --show-hardware-config >"$hardware_tmp"
+install -m 0644 "$hardware_tmp" "$machine_dir/hardware-configuration.nix"
+
+note "Installing '$machine_hostname' (NVIDIA open modules: $enable_nvidia)..."
+nixos-install \
+  --root "$target_root" \
+  --flake "$repo_root#machine" \
+  --no-root-passwd
+
+chown -R 1000:100 "$target_root/home/aileks"
+
+note "Set the aileks login password."
+nixos-enter --root "$target_root" -- passwd aileks
+
+note "Installation complete. Review the generated hardware and GPU files, then reboot when ready."

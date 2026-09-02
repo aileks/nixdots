@@ -45,6 +45,7 @@
 
   users.users.aileks = {
     isNormalUser = true;
+    uid = 1000;
     shell = pkgs.zsh;
     extraGroups = [
       "wheel"
@@ -61,7 +62,10 @@
     udisks2.enable = true;
     fwupd.enable = true;
     power-profiles-daemon.enable = true;
-    gnome.gnome-keyring.enable = true;
+    gnome = {
+      gnome-keyring.enable = true;
+      gcr-ssh-agent.enable = false;
+    };
     avahi = {
       enable = true;
       nssmdns4 = true;

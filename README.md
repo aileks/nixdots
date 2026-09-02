@@ -1,25 +1,12 @@
 # NixOS dotfiles
 
-NixOS 26.05 and Home Manager configuration.
+NixOS 26.05 and Home Manager configuration (with flakes)!
 
-## Clone
-
-Clone recursively:
+## Install
 
 ```bash
 git clone --recurse-submodules https://github.com/aileks/nixdots.git ~/.dotfiles
-```
-
-For an existing clone:
-
-```bash
-git submodule update --init --recursive
-```
-
-## Checks
-
-```bash
-nixfmt --check flake.nix home.nix modules packages hosts
-nix flake check
-nix build .#mitishell .#cinder-grove-gtk .#papirus-cinder-grove .#fastmail-desktop .#tensaku
+cd ~/.dotfiles
+sudo ./bin/install --check-only
+sudo ./bin/install --hostname your-hostname
 ```

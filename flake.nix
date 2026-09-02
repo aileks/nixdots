@@ -47,30 +47,68 @@
         config.allowUnfree = true;
       };
       localPackages = nixpkgs.lib.genAttrs localPackageNames (name: pkgs.${name});
+      machine = nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = { inherit inputs; };
+        modules = [
+          (_: { nixpkgs.overlays = [ overlay ]; })
+          ./modules/common.nix
+          ./hosts/machine
+          home-manager.nixosModules.home-manager
+          (
+            { pkgs, ... }:
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                backupCommand = "${pkgs.trash-cli}/bin/trash-put";
+                extraSpecialArgs = { inherit inputs; };
+                users.aileks = import ./home.nix;
+              };
+            }
+          )
+        ];
+      };
+      sourceCheck =
+        pkgs.runCommand "nixdots-source-check"
+          {
+            nativeBuildInputs = with pkgs; [
+              findutils
+              jq
+              libxml2
+              lua
+              nixfmt
+              shellcheck
+              shfmt
+              zsh
+            ];
+          }
+          ''
+            cp -R ${self} source
+            chmod -R u+w source
+            cd source
+
+            find . -path ./nvim -prune -o -name '*.nix' -print0 \
+              | xargs -0 -r nixfmt --check
+            shellcheck bin/install
+            shfmt -d -i 2 -ci -bn bin/install
+            zsh -n zsh/zshrc
+            find hypr nvim -type f -name '*.lua' -exec luac -p {} \;
+            jq empty mitishell/config.json
+            xmllint --noout fontconfig/fonts.conf bat/themes/cinder-grove.tmTheme
+
+            touch "$out"
+          '';
     in
     {
       overlays.default = overlay;
       packages.${system} = localPackages;
-      checks.${system} = localPackages;
-
-      nixosConfigurations.nixghost = nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = { inherit inputs; };
-        modules = [
-          ({ ... }: { nixpkgs.overlays = [ overlay ]; })
-          ./modules/common.nix
-          ./hosts/nixghost
-          home-manager.nixosModules.home-manager
-          {
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = true;
-              backupFileExtension = "bak";
-              extraSpecialArgs = { inherit inputs; };
-              users.aileks = import ./home.nix;
-            };
-          }
-        ];
+      checks.${system} = localPackages // {
+        inherit sourceCheck;
+        machine = machine.config.system.build.toplevel;
       };
+      formatter.${system} = pkgs.nixfmt-tree;
+
+      nixosConfigurations.machine = machine;
     };
 }
