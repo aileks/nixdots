@@ -42,7 +42,7 @@
   },
   "font": {
     "family": "Maple Mono",
-    "monoFamily": ""
+    "monoFamily": "Maple Mono NF"
   },
   "clipboard": {
     "enabled": true,
