@@ -123,7 +123,6 @@ in
         file-roller
         gnome-disk-utility
         imv
-        celluloid
         papers
         nautilus
         nwg-look
@@ -163,8 +162,9 @@ in
         hunspell
         hunspellDicts.en_US
         (tesseract5.override { enableLanguages = [ "eng" ]; })
-        cliamp
         tmux-sessionizer
+        yt-dlp
+        mpv
       ])
       ++ [ zenTwilight ];
 
