@@ -83,11 +83,11 @@ in
         output = {
           mode = "type";
           fallback_to_clipboard = true;
-        };
-        notification = {
-          on_recording_start = false;
-          on_recording_stop = false;
-          on_transcription = false;
+          notification = {
+            on_recording_start = false;
+            on_recording_stop = false;
+            on_transcription = false;
+          };
         };
       };
     };
