@@ -263,16 +263,19 @@ in
       ".local/bin/bar-clock".source = lib.getExe barClock;
       ".zshrc".source = createSymlink "zsh/zshrc";
       ".antidote/antidote.zsh".source = "${pkgs.antidote}/share/antidote/antidote.zsh";
-      ".profile".text = ''
-        export PATH="$HOME/.local/bin:$PATH"
-        export QT_QPA_PLATFORMTHEME=qt6ct
-        export XCURSOR_THEME=Adwaita
-        export XCURSOR_SIZE=24
-      '';
     };
 
-    sessionVariables.SSH_AUTH_SOCK = "${config.home.homeDirectory}/.bitwarden-ssh-agent.sock";
+    sessionPath = [ "${config.home.homeDirectory}/.local/bin" ];
+
+    sessionVariables = {
+      SSH_AUTH_SOCK = "${config.home.homeDirectory}/.bitwarden-ssh-agent.sock";
+      QT_QPA_PLATFORMTHEME = "qt6ct";
+      XCURSOR_THEME = "Adwaita";
+      XCURSOR_SIZE = 24;
+    };
   };
+
+  xsession.enable = true;
 
   xresources.properties."Xft.dpi" = 96;
 

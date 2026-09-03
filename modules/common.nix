@@ -124,7 +124,6 @@ in
       ${pkgs.xrandr}/bin/xrandr --output DP-0 --primary --mode 2560x1440 --rate 200.00 --pos 1080x0 \
         --output HDMI-0 --mode 1920x1080 --rate 200.00 --rotate left --pos 0x-240 || true
       ${pkgs.xkbcomp}/bin/xkbcomp ${../hypr/keymap.xkb} "$DISPLAY"
-      ${pkgs.xsetroot}/bin/xsetroot -cursor_name left_ptr
       ${pkgs.numlockx}/bin/numlockx on
       ${pkgs.xset}/bin/xset r rate 250 50
       ${pkgs.xset}/bin/xset s 600 5
