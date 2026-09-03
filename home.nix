@@ -102,7 +102,6 @@ in
         wget
         zip
         zoxide
-        mise
         kitty
         starship
         tmux
