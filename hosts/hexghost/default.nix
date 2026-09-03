@@ -42,6 +42,7 @@ in
     open = true;
     package = nvidiaDriver;
     nvidiaSettings = true;
+    powerManagement.enable = true;
   };
 
   programs.appimage = {
@@ -74,6 +75,7 @@ in
 
       settings = {
         hotkey.enabled = false;
+        audio.pause_media = true;
         osd = {
           enabled = true;
           frontend = "gtk4";
