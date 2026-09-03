@@ -1,0 +1,13 @@
+button="${BLOCK_BUTTON:-0}"
+
+case "$button" in
+1 | 3) wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle ;;
+esac
+
+state=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)
+vol=${state#Volume: }
+if [[ "$vol" == *'[MUTED]'* ]]; then
+    printf '^c#B34A45^mute^d^'
+else
+    awk -v v="$vol" 'BEGIN { printf "^c#879B5C^%.0f%%^d^", v * 100 }'
+fi

@@ -50,6 +50,8 @@ in
     binfmt = true;
   };
 
+  programs.ydotool.enable = true;
+
   services.hardware.openrgb = {
     enable = true;
     motherboard = "amd";
@@ -65,6 +67,8 @@ in
     home.packages = with pkgs; [
       btop-cuda
     ];
+
+    systemd.user.sessionVariables.YDOTOOL_SOCKET = "/run/ydotoold/socket";
 
     programs.voxtype = {
       enable = true;

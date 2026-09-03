@@ -26,8 +26,8 @@
       "keyColor": "green",
     },
     {
-      "type": "swap",
-      "key": "󰓡 swap",
+      "type": "disk",
+      "key": "󰋊 disk",
       "keyColor": "green",
     },
     {
@@ -52,12 +52,17 @@
     },
     {
       "type": "shell",
-      "key": " shell",
+      "key": " shell",
+      "keyColor": "yellow",
+    },
+    {
+      "type": "wm",
+      "key": "󰖯 wm",
       "keyColor": "yellow",
     },
     {
       "type": "terminalfont",
-      "key": " font",
+      "key": "󰛖 font",
       "keyColor": "yellow",
     },
     {
@@ -73,7 +78,7 @@
       "type": "command",
       "key": "󰃭 age",
       "keyColor": "red",
-      "text": "birth=$(stat -c %W / 2>/dev/null); current=$(date +%s); if [ \"${birth:-0}\" -gt 0 ] 2>/dev/null && [ \"$birth\" -le \"$current\" ]; then echo $(((current - birth) / 86400)) days; else echo unknown; fi",
+      "text": "birth=$(stat -c %W /nix/store 2>/dev/null); if [ \"${birth:-0}\" -gt 0 ] 2>/dev/null; then days=$(( ($(date +%s) - $(date -d \"$(date -d \"@$birth\" +%F)\" +%s)) / 86400 )); if [ \"$days\" -eq 1 ]; then echo \"1 day\"; else echo \"$days days\"; fi; else echo unknown; fi",
     },
     {
       "type": "uptime",

@@ -5,6 +5,25 @@
   ...
 }:
 
+let
+  dwmPkg = pkgs.dwm.override {
+    conf = ../dwm/config.def.h;
+    patches = [
+      ../dwm/patches/actualfullscreen.diff
+      ../dwm/patches/restartsig.diff
+      ../dwm/patches/movestack.diff
+      ../dwm/patches/pertag.diff
+      ../dwm/patches/attachbelow.diff
+      ../dwm/patches/vanitygaps.diff
+      ../dwm/patches/status2d.diff
+      ../dwm/patches/systray.diff
+      ../dwm/patches/swallow.diff
+      ../dwm/patches/statuscmd-status2d.diff
+      ../dwm/patches/primarymon.diff
+    ];
+    extraLibs = [ pkgs.libxcb ];
+  };
+in
 {
   boot.loader = {
     limine = {
@@ -62,6 +81,7 @@
       "wheel"
       "networkmanager"
       "i2c"
+      "ydotool"
     ];
   };
 
@@ -91,6 +111,31 @@
   };
 
   security.rtkit.enable = true;
+  security.pam.services.xsecurelock = { };
+
+  services.xserver = {
+    enable = true;
+    xkb.options = "terminate:ctrl_alt_bksp";
+    windowManager.dwm = {
+      enable = true;
+      package = dwmPkg;
+    };
+    displayManager.sessionCommands = ''
+      ${pkgs.xrandr}/bin/xrandr --output DP-0 --primary --mode 2560x1440 --rate 200.00 --pos 1080x0 \
+        --output HDMI-0 --mode 1920x1080 --rate 200.00 --rotate left --pos 0x-240 || true
+      ${pkgs.xkbcomp}/bin/xkbcomp ${../hypr/keymap.xkb} "$DISPLAY"
+      ${pkgs.xsetroot}/bin/xsetroot -cursor_name left_ptr
+      ${pkgs.numlockx}/bin/numlockx on
+      ${pkgs.xset}/bin/xset r rate 250 50
+      ${pkgs.xset}/bin/xset s 600 5
+      ${pkgs.xset}/bin/xset dpms 660 660 660
+    '';
+  };
+
+  services.libinput = {
+    enable = true;
+    mouse.accelProfile = "flat";
+  };
 
   virtualisation.podman = {
     enable = true;
@@ -114,8 +159,7 @@
 
   fonts.packages = with pkgs; [
     adwaita-fonts
-    maple-mono.truetype
-    maple-mono.NF
+    nerd-fonts.iosevka
     noto-fonts
     noto-fonts-cjk-sans
     noto-fonts-cjk-serif

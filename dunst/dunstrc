@@ -1,0 +1,39 @@
+[global]
+monitor = 0
+follow = none
+width = 380
+height = 120
+origin = top-right
+offset = 10x46
+frame_width = 2
+frame_color = "#58534C"
+separator_color = frame
+font = Iosevka Nerd Font 11
+icon_position = left
+icon_theme = Papirus-Dark
+max_icon_size = 32
+gap_size = 6
+padding = 10
+horizontal_padding = 12
+text_icon_padding = 10
+corner_radius = 4
+format = "<b>%s</b>\n%b"
+timeout = 5
+
+[urgency_low]
+background = "#131210"
+foreground = "#BBB3A9"
+frame_color = "#58534C"
+timeout = 4
+
+[urgency_normal]
+background = "#131210"
+foreground = "#BBB3A9"
+frame_color = "#58534C"
+timeout = 5
+
+[urgency_critical]
+background = "#131210"
+foreground = "#DDD5CA"
+frame_color = "#B34A45"
+timeout = 0

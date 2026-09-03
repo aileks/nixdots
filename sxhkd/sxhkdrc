@@ -1,0 +1,6 @@
+# push-to-talk dictation: press to start, release to stop
+F9
+    voxtype record start
+
+@F9
+    voxtype record stop

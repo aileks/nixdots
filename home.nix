@@ -16,12 +16,14 @@ let
     "bat" = "bat";
     "btop" = "btop";
     "cava" = "cava";
+    "dunst" = "dunst";
     "fastfetch" = "fastfetch";
     "fontconfig/fonts.conf" = "fontconfig/fonts.conf";
     "hypr" = "hypr";
     "mitishell/config.json" = "mitishell/config.json";
     "nvim" = "nvim";
     "qt6ct" = "qt6ct";
+    "sxhkd" = "sxhkd";
     "tmux" = "tmux";
     "xdg-desktop-portal" = "xdg-desktop-portal";
     "starship.toml" = "starship/starship.toml";
@@ -54,6 +56,68 @@ let
     ];
     text = builtins.readFile ./bin/monitor-watch;
   };
+  dmenuPkg = pkgs.dmenu.override {
+    conf = ./dmenu/config.def.h;
+    patches = [
+      ./dmenu/patches/center.diff
+      ./dmenu/patches/border.diff
+      ./dmenu/patches/line-height.diff
+    ];
+  };
+  dwmblocksPkg = pkgs.stdenv.mkDerivation {
+    pname = "dwmblocks-async";
+    version = "unstable-2026-04-18";
+    src = pkgs.fetchFromGitHub {
+      owner = "UtkarshVerma";
+      repo = "dwmblocks-async";
+      rev = "469e6841432693d81a17088706d99ef044a29936";
+      hash = "sha256-gACpUAFVT/6Z9IvWQQ+IW7vNG7kzgJeVkXXMJeuw1V0=";
+    };
+    nativeBuildInputs = [ pkgs.pkg-config ];
+    buildInputs = [ pkgs.xcbutil ];
+    postPatch = ''
+      cp ${./dwmblocks/config.h} config.h
+    '';
+    makeFlags = [ "PREFIX=$(out)" ];
+    meta.mainProgram = "dwmblocks";
+  };
+  dwmblocksPath = lib.makeBinPath (
+    with pkgs;
+    [
+      coreutils
+      gawk
+      procps
+      wireplumber
+    ]
+  );
+  barVolume = pkgs.writeShellApplication {
+    name = "bar-volume";
+    runtimeInputs = with pkgs; [
+      gawk
+      wireplumber
+    ];
+    text = builtins.readFile ./bin/bar-volume;
+  };
+  barSysinfo = pkgs.writeShellApplication {
+    name = "bar-sysinfo";
+    runtimeInputs = with pkgs; [
+      coreutils
+      gawk
+      kitty
+      procps
+    ];
+    text = builtins.readFile ./bin/bar-sysinfo;
+  };
+  barClock = pkgs.writeShellApplication {
+    name = "bar-clock";
+    runtimeInputs = with pkgs; [ coreutils ];
+    text = builtins.readFile ./bin/bar-clock;
+  };
+  xsessionPath = lib.concatStringsSep ":" [
+    "${config.home.profileDirectory}/bin"
+    "/run/current-system/sw/bin"
+    "${config.home.homeDirectory}/.local/bin"
+  ];
   mitishellRuntimePath = lib.makeBinPath (
     with pkgs;
     [
@@ -90,6 +154,7 @@ in
         cmake
         (lib.hiPrio gcc)
         clang
+        clang-tools
         bat
         eza
         fd
@@ -144,6 +209,7 @@ in
         slurp
         wev
         wl-clipboard
+        xclip
         playerctl
         libnotify
         inotify-tools
@@ -165,8 +231,21 @@ in
         hunspellDicts.en_US
         (tesseract5.override { enableLanguages = [ "eng" ]; })
         tmux-sessionizer
+        dunst
+        feh
+        flameshot
+        numlockx
+        sxhkd
+        wireplumber
+        xautolock
+        xsecurelock
+        xss-lock
       ])
-      ++ [ zenTwilight ];
+      ++ [
+        zenTwilight
+        dmenuPkg
+        dwmblocksPkg
+      ];
 
     pointerCursor = {
       gtk.enable = true;
@@ -179,12 +258,23 @@ in
     file = {
       ".local/bin/mitishell".source = lib.getExe pkgs.mitishell;
       ".local/bin/zen-browser-twilight".source = "${zenTwilight}/bin/zen-twilight";
+      ".local/bin/bar-volume".source = lib.getExe barVolume;
+      ".local/bin/bar-sysinfo".source = lib.getExe barSysinfo;
+      ".local/bin/bar-clock".source = lib.getExe barClock;
       ".zshrc".source = createSymlink "zsh/zshrc";
       ".antidote/antidote.zsh".source = "${pkgs.antidote}/share/antidote/antidote.zsh";
+      ".profile".text = ''
+        export PATH="$HOME/.local/bin:$PATH"
+        export QT_QPA_PLATFORMTHEME=qt6ct
+        export XCURSOR_THEME=Adwaita
+        export XCURSOR_SIZE=24
+      '';
     };
 
     sessionVariables.SSH_AUTH_SOCK = "${config.home.homeDirectory}/.bitwarden-ssh-agent.sock";
   };
+
+  xresources.properties."Xft.dpi" = 96;
 
   gtk = {
     enable = true;
@@ -225,7 +315,7 @@ in
       cursor-theme = "Adwaita";
       cursor-size = 24;
       font-name = lib.mkForce "Adwaita Sans 11";
-      monospace-font-name = "Maple Mono 11";
+      monospace-font-name = "Iosevka Nerd Font 11";
       font-antialiasing = "rgba";
       font-hinting = "slight";
       font-rgba-order = "rgb";
@@ -290,9 +380,116 @@ in
       notify = true;
       tray = "auto";
     };
+    picom = {
+      enable = true;
+      backend = "glx";
+      vSync = true;
+      fade = true;
+      activeOpacity = 1.0;
+      inactiveOpacity = 0.95;
+      shadow = true;
+      settings.use-damage = false;
+    };
   };
 
   systemd.user.services = {
+    hypridle.Unit.ConditionEnvironment = "WAYLAND_DISPLAY";
+    hyprpaper.Unit.ConditionEnvironment = "WAYLAND_DISPLAY";
+    hyprpolkitagent.Unit.ConditionEnvironment = "WAYLAND_DISPLAY";
+    hyprsunset.Unit.ConditionEnvironment = "WAYLAND_DISPLAY";
+    picom.Unit.ConditionEnvironment = "DISPLAY";
+
+    dwmblocks = {
+      Unit = {
+        Description = "dwm status blocks";
+        ConditionEnvironment = "DISPLAY";
+        PartOf = [ graphicalSessionTarget ];
+        After = [ graphicalSessionTarget ];
+      };
+      Service = {
+        ExecStart = lib.getExe dwmblocksPkg;
+        Environment = [ "PATH=${dwmblocksPath}:${xsessionPath}" ];
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+      Install.WantedBy = [ graphicalSessionTarget ];
+    };
+
+    dunst = {
+      Unit = {
+        Description = "dunst notification daemon";
+        ConditionEnvironment = "DISPLAY";
+        PartOf = [ graphicalSessionTarget ];
+        After = [ graphicalSessionTarget ];
+      };
+      Service = {
+        ExecStart = "${pkgs.dunst}/bin/dunst";
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+      Install.WantedBy = [ graphicalSessionTarget ];
+    };
+
+    wallpaper = {
+      Unit = {
+        Description = "Set X wallpaper";
+        ConditionEnvironment = "DISPLAY";
+        PartOf = [ graphicalSessionTarget ];
+        After = [ graphicalSessionTarget ];
+      };
+      Service = {
+        Type = "oneshot";
+        ExecStart = "${lib.getExe pkgs.feh} --no-fehbg --bg-fill ${config.home.homeDirectory}/.local/share/backgrounds/fantasy-woods.jpg";
+      };
+      Install.WantedBy = [ graphicalSessionTarget ];
+    };
+
+    sxhkd = {
+      Unit = {
+        Description = "sxhkd key daemon";
+        ConditionEnvironment = "DISPLAY";
+        PartOf = [ graphicalSessionTarget ];
+        After = [ graphicalSessionTarget ];
+      };
+      Service = {
+        ExecStart = "${pkgs.sxhkd}/bin/sxhkd";
+        Environment = [ "PATH=${xsessionPath}" ];
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+      Install.WantedBy = [ graphicalSessionTarget ];
+    };
+
+    xss-lock = {
+      Unit = {
+        Description = "X screen lock on idle and session lock";
+        ConditionEnvironment = "DISPLAY";
+        PartOf = [ graphicalSessionTarget ];
+        After = [ graphicalSessionTarget ];
+      };
+      Service = {
+        ExecStart = "${pkgs.xss-lock}/bin/xss-lock -l ${pkgs.xsecurelock}/bin/xsecurelock";
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+      Install.WantedBy = [ graphicalSessionTarget ];
+    };
+
+    xidle-suspend = {
+      Unit = {
+        Description = "Suspend after idle timeout";
+        ConditionEnvironment = "DISPLAY";
+        PartOf = [ graphicalSessionTarget ];
+        After = [ graphicalSessionTarget ];
+      };
+      Service = {
+        ExecStart = "${pkgs.xautolock}/bin/xautolock -time 30 -detectsleep -locker 'systemctl suspend'";
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+      Install.WantedBy = [ graphicalSessionTarget ];
+    };
+
     mitishell = {
       Unit = {
         Description = "Mitishell desktop shell";
