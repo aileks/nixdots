@@ -1,0 +1,177 @@
+From 9ce669ca8d9bfffc4a7626de15da24f5b27ba809 Mon Sep 17 00:00:00 2001
+From: Justinas Grigas <dev@jstnas.com>
+Date: Sat, 9 May 2026 14:20:00 +0100
+Subject: [PATCH] xresources: runtime configuration using X resources
+
+---
+ config.def.h | 36 +++++++++++++++++++++++++
+ x.c          | 74 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 110 insertions(+)
+
+diff --git a/config.def.h b/config.def.h
+index 2cd740a..62e88cc 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -472,3 +472,39 @@ static char ascii_printable[] =
+ 	" !\"#$%&'()*+,-./0123456789:;<=>?"
+ 	"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+ 	"`abcdefghijklmnopqrstuvwxyz{|}~";
++
++/* X resources to update */
++static const XResPref resources[] = {
++	/* name                    type     address */
++	{ "st.font",               STRING,  &font },
++	{ "st.color0",             STRING,  &colorname[0] },
++	{ "st.color1",             STRING,  &colorname[1] },
++	{ "st.color2",             STRING,  &colorname[2] },
++	{ "st.color3",             STRING,  &colorname[3] },
++	{ "st.color4",             STRING,  &colorname[4] },
++	{ "st.color5",             STRING,  &colorname[5] },
++	{ "st.color6",             STRING,  &colorname[6] },
++	{ "st.color7",             STRING,  &colorname[7] },
++	{ "st.color8",             STRING,  &colorname[8] },
++	{ "st.color9",             STRING,  &colorname[9] },
++	{ "st.color10",            STRING,  &colorname[10] },
++	{ "st.color11",            STRING,  &colorname[11] },
++	{ "st.color12",            STRING,  &colorname[12] },
++	{ "st.color13",            STRING,  &colorname[13] },
++	{ "st.color14",            STRING,  &colorname[14] },
++	{ "st.color15",            STRING,  &colorname[15] },
++	{ "st.foreground",         STRING,  &colorname[258] },
++	{ "st.background",         STRING,  &colorname[259] },
++	{ "st.cursorColor",        STRING,  &colorname[256] },
++	{ "st.cursorColorReverse", STRING,  &colorname[257] },
++	{ "st.termname",           STRING,  &termname },
++	{ "st.shell",              STRING,  &shell },
++	{ "st.minlatency",         INTEGER, &minlatency },
++	{ "st.maxlatency",         INTEGER, &maxlatency },
++	{ "st.blinktimeout",       INTEGER, &blinktimeout },
++	{ "st.bellvolume",         INTEGER, &bellvolume },
++	{ "st.tabspaces",          INTEGER, &tabspaces },
++	{ "st.borderpx",           INTEGER, &borderpx },
++	{ "st.cwscale",            FLOAT,   &cwscale },
++	{ "st.chscale",            FLOAT,   &chscale },
++};
+diff --git a/x.c b/x.c
+index d73152b..5cd6f7c 100644
+--- a/x.c
++++ b/x.c
+@@ -14,6 +14,7 @@
+ #include <X11/keysym.h>
+ #include <X11/Xft/Xft.h>
+ #include <X11/XKBlib.h>
++#include <X11/Xresource.h>
+ 
+ char *argv0;
+ #include "arg.h"
+@@ -45,6 +46,15 @@ typedef struct {
+ 	signed char appcursor; /* application cursor */
+ } Key;
+ 
++/* Xresources preferences */
++enum XResType { STRING, INTEGER, FLOAT };
++
++typedef struct {
++	const char *name;
++	enum XResType type;
++	void *dst;
++} XResPref;
++
+ /* X modifiers */
+ #define XK_ANY_MOD    UINT_MAX
+ #define XK_NO_MOD     0
+@@ -189,6 +199,9 @@ static int match(uint, uint);
+ static void run(void);
+ static void usage(void);
+ 
++static void xresload(const XResPref *);
++static void xresupdate(void);
++
+ static void (*handler[LASTEvent])(XEvent *) = {
+ 	[KeyPress] = kpress,
+ 	[ClientMessage] = cmessage,
+@@ -220,6 +233,7 @@ static DC dc;
+ static XWindow xw;
+ static XSelection xsel;
+ static TermWindow win;
++static XrmDatabase xrdb;
+ 
+ /* Font Ring Cache */
+ enum {
+@@ -2023,6 +2037,63 @@ run(void)
+ 	}
+ }
+ 
++void
++xresload(const XResPref *resource)
++{
++	char *type;
++	XrmValue ret;
++
++	if (!XrmGetResource(xrdb, resource->name, NULL, &type, &ret))
++		return;
++	if (ret.addr == NULL || strncmp(type, "String", sizeof("String")))
++		return;
++
++	switch (resource->type) {
++	case STRING:
++		*(char **)resource->dst = ret.addr;
++		break;
++	case INTEGER:
++		*(int *)resource->dst = strtoul(ret.addr, NULL, 10);
++		break;
++	case FLOAT:
++		*(float *)resource->dst = strtof(ret.addr, NULL);
++		break;
++	}
++}
++
++void
++xresupdate(void)
++{
++	Display *display;
++	char *resm;
++	const XResPref *p;
++
++	display = XOpenDisplay(NULL);
++	if (!display)
++		return;
++
++	resm = XResourceManagerString(display);
++	if (resm) {
++		if (xrdb)
++			XrmDestroyDatabase(xrdb);
++		xrdb = XrmGetStringDatabase(resm);
++		if (xrdb) {
++			for (p = resources; p < resources + LEN(resources); ++p)
++				xresload(p);
++		}
++	}
++	XCloseDisplay(display);
++}
++
++void
++xresreload(int signum) {
++	xresupdate();
++	xloadcols();
++	cresize(0, 0);
++	redraw();
++	xhints();
++}
++
+ void
+ usage(void)
+ {
+@@ -2096,6 +2167,9 @@ run:
+ 
+ 	setlocale(LC_CTYPE, "");
+ 	XSetLocaleModifiers("");
++	XrmInitialize();
++	xresupdate();
++	signal(SIGUSR1, xresreload);
+ 	cols = MAX(cols, 1);
+ 	rows = MAX(rows, 1);
+ 	tnew(cols, rows);
+-- 
+2.53.0
+

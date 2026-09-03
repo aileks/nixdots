@@ -1,15 +1,16 @@
+#!/usr/bin/env bash
 button="${BLOCK_BUTTON:-0}"
 
 case "$button" in
-1) nohup kitty -e btop >/dev/null 2>&1 & ;;
+  1) nohup st -e btop >/dev/null 2>&1 & ;;
 esac
 
 mem=$(free | awk '/^Mem/ { printf "%.0f", $3 / $2 * 100 }')
 temp=""
 for d in /sys/class/hwmon/hwmon*; do
-    if [[ "$(cat "$d/name" 2>/dev/null)" == k10temp ]]; then
-        temp=$(awk '{ printf "%.0f", $1 / 1000 }' "$d/temp1_input")
-        break
-    fi
+  if [[ "$(cat "$d/name" 2>/dev/null)" == k10temp ]]; then
+    temp=$(awk '{ printf "%.0f", $1 / 1000 }' "$d/temp1_input")
+    break
+  fi
 done
-printf '^c#6785A1^%s%%^d^ ^c#D9A441^%sC^d^' "$mem" "$temp"
+printf '^c#6785A1^%s%%^d^ ^c#E17A3F^%sC^d^' "$mem" "$temp"

@@ -61,11 +61,6 @@
       "keyColor": "yellow",
     },
     {
-      "type": "terminalfont",
-      "key": "󰛖 font",
-      "keyColor": "yellow",
-    },
-    {
       "type": "terminal",
       "key": " term",
       "keyColor": "yellow",

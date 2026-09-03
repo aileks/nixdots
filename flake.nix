@@ -15,8 +15,6 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    hyprsunset.url = "github:hyprwm/hyprsunset/v0.4.0";
-
     voxtype.url = "github:peteonrails/voxtype/v1.0.1";
   };
 
@@ -31,19 +29,29 @@
       system = "x86_64-linux";
       installation = import ./installation.nix;
       localPackageNames = [
-        "mitishell"
+        "dwm"
+        "dmenu"
+        "st"
+        "dwmblocks"
         "cinder-grove-gtk"
         "papirus-cinder-grove"
         "fastmail-desktop"
-        "tensaku"
         "iosevka-custom"
       ];
-      overlay = final: _prev: {
-        mitishell = final.callPackage ./packages/mitishell.nix { };
+      overlay = final: prev: {
+        dwm = import ./packages/dwm.nix {
+          dwm = prev.dwm;
+          libxcb = prev.libxcb;
+        };
+        dmenu = import ./packages/dmenu.nix { dmenu = prev.dmenu; };
+        st = import ./packages/st.nix {
+          st = prev.st;
+          harfbuzz = prev.harfbuzz;
+        };
+        dwmblocks = final.callPackage ./packages/dwmblocks.nix { };
         cinder-grove-gtk = final.callPackage ./packages/cinder-grove-gtk.nix { };
         papirus-cinder-grove = final.callPackage ./packages/papirus-cinder-grove.nix { };
         fastmail-desktop = final.callPackage ./packages/fastmail-desktop.nix { };
-        tensaku = final.callPackage ./packages/tensaku.nix { };
         iosevka-custom = final.callPackage ./packages/iosevka-custom.nix { };
       };
       pkgs = import nixpkgs {
@@ -52,10 +60,7 @@
         config.allowUnfree = true;
       };
       localPackages = nixpkgs.lib.genAttrs localPackageNames (name: pkgs.${name});
-      hostNames = [
-        "nixghost"
-        "hexghost"
-      ];
+      hostNames = [ "hexghost" ];
       mkHost =
         hostName:
         nixpkgs.lib.nixosSystem {
@@ -108,13 +113,10 @@
 
             find . -path ./nvim -prune -o -name '*.nix' -print0 \
               | xargs -0 -r nixfmt --check
-            shellcheck bin/* tests/*.bash
-            shfmt -d -i 2 -ci -bn bin/* tests/*.bash
-            bash tests/install.bash
-            bash tests/monitors.bash
+            shellcheck bin/*
+            shfmt -d -i 2 -ci -bn bin/*
             zsh -n zsh/zshrc
-            find hypr nvim -type f -name '*.lua' -exec luac -p {} \;
-            jq empty mitishell/config.json
+            find nvim -type f -name '*.lua' -exec luac -p {} \;
             xmllint --noout fontconfig/fonts.conf bat/themes/cinder-grove.tmTheme
 
             touch "$out"

@@ -1,0 +1,147 @@
+diff -ruN -x '*.orig' -x '*.rej' a/config.def.h b/config.def.h
+--- a/config.def.h	2026-09-03 18:31:18.322296739 -0400
++++ b/config.def.h	2026-09-03 18:31:18.326501981 -0400
+@@ -15,6 +15,8 @@
+ 	/*     fg         bg       */
+ 	[SchemeNorm] = { "#bbbbbb", "#222222" },
+ 	[SchemeSel] = { "#eeeeee", "#005577" },
++	[SchemeSelHighlight] = { "#ffc978", "#005577" },
++	[SchemeNormHighlight] = { "#ffc978", "#222222" },
+ 	[SchemeOut] = { "#000000", "#00ffff" },
+ };
+ /* -l option; if nonzero, dmenu uses vertical list with given number of lines */
+diff -ruN -x '*.orig' -x '*.rej' a/dmenu.1 b/dmenu.1
+--- a/dmenu.1	2026-09-03 18:31:18.313582862 -0400
++++ b/dmenu.1	2026-09-03 18:31:18.326529022 -0400
+@@ -22,6 +22,14 @@
+ .IR color ]
+ .RB [ \-sf
+ .IR color ]
++.RB [ \-nhb
++.IR color ]
++.RB [ \-nhf
++.IR color ]
++.RB [ \-shb
++.IR color ]
++.RB [ \-shf
++.IR color ]
+ .RB [ \-w
+ .IR windowid ]
+ .P
+@@ -86,6 +94,18 @@
+ .BI \-sf " color"
+ defines the selected foreground color.
+ .TP
++.BI \-nhb " color"
++defines the normal highlight background color.
++.TP
++.BI \-nhf " color"
++defines the normal highlight foreground color.
++.TP
++.BI \-shb " color"
++defines the selected highlight background color.
++.TP
++.BI \-shf " color"
++defines the selected highlight foreground color.
++.TP
+ .B \-v
+ prints version information to stdout, then exits.
+ .TP
+diff -ruN -x '*.orig' -x '*.rej' a/dmenu.c b/dmenu.c
+--- a/dmenu.c	2026-09-03 18:31:18.322363846 -0400
++++ b/dmenu.c	2026-09-03 18:31:18.334998327 -0400
+@@ -26,7 +26,9 @@
+ #define TEXTW(X)              (drw_fontset_getwidth(drw, (X)) + lrpad)
+ 
+ /* enums */
+-enum { SchemeNorm, SchemeSel, SchemeOut, SchemeLast }; /* color schemes */
++enum { SchemeNorm, SchemeSel, SchemeNormHighlight, SchemeSelHighlight,
++       SchemeOut, SchemeLast }; /* color schemes */
++
+ 
+ struct item {
+ 	char *text;
+@@ -141,9 +143,47 @@
+ 	return NULL;
+ }
+ 
++static void
++drawhighlights(struct item *item, int x, int y, int maxw)
++{
++	int i, indent;
++	char c, *highlight;
++
++	if (!(strlen(item->text) && strlen(text)))
++		return;
++
++	drw_setscheme(drw, scheme[item == sel
++	                   ? SchemeSelHighlight
++	                   : SchemeNormHighlight]);
++	for (i = 0, highlight = item->text; *highlight && text[i];) {
++		if (!fstrncmp(highlight, &text[i], 1)) {
++			/* get indentation */
++			c = *highlight;
++			*highlight = '\0';
++			indent = TEXTW(item->text);
++			*highlight = c;
++
++			/* highlight character */
++			c = highlight[1];
++			highlight[1] = '\0';
++			drw_text(
++				drw,
++				x + indent - (lrpad / 2.),
++				y,
++				MIN(maxw - indent, TEXTW(highlight) - lrpad),
++				bh, 0, highlight, 0
++			);
++			highlight[1] = c;
++			++i;
++		}
++		++highlight;
++	}
++}
++
+ static int
+ drawitem(struct item *item, int x, int y, int w)
+ {
++	int r;
+ 	if (item == sel)
+ 		drw_setscheme(drw, scheme[SchemeSel]);
+ 	else if (item->out)
+@@ -151,7 +191,9 @@
+ 	else
+ 		drw_setscheme(drw, scheme[SchemeNorm]);
+ 
+-	return drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0);
++	r = drw_text(drw, x, y, w, bh, lrpad / 2, item->text, 0);
++	drawhighlights(item, x, y, w);
++	return r;
+ }
+ 
+ static void
+@@ -830,7 +872,8 @@
+ usage(void)
+ {
+ 	die("usage: dmenu [-bFfiv] [-l lines] [-h height] [-p prompt] [-fn font] [-m monitor]\n"
+-	    "             [-nb color] [-nf color] [-sb color] [-sf color] [-w windowid]");
++	    "             [-nb color] [-nf color] [-sb color] [-sf color]\n" \
++	    "             [-nhb color] [-nhf color] [-shb color] [-shf color] [-w windowid]");
+ }
+ 
+ int
+@@ -878,6 +921,14 @@
+ 			colors[SchemeSel][ColBg] = argv[++i];
+ 		else if (!strcmp(argv[i], "-sf"))  /* selected foreground color */
+ 			colors[SchemeSel][ColFg] = argv[++i];
++		else if (!strcmp(argv[i], "-nhb")) /* normal hi background color */
++			colors[SchemeNormHighlight][ColBg] = argv[++i];
++		else if (!strcmp(argv[i], "-nhf")) /* normal hi foreground color */
++			colors[SchemeNormHighlight][ColFg] = argv[++i];
++		else if (!strcmp(argv[i], "-shb")) /* selected hi background color */
++			colors[SchemeSelHighlight][ColBg] = argv[++i];
++		else if (!strcmp(argv[i], "-shf")) /* selected hi foreground color */
++			colors[SchemeSelHighlight][ColFg] = argv[++i];
+ 		else if (!strcmp(argv[i], "-w"))   /* embedding window id */
+ 			embed = argv[++i];
+ 		else if (!strcmp(argv[i], "-bw"))

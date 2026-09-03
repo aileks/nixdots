@@ -1,0 +1,236 @@
+diff -ruN -x '*.orig' -x '*.rej' a/config.def.h b/config.def.h
+--- a/config.def.h	2026-09-03 18:31:18.326501981 -0400
++++ b/config.def.h	2026-09-03 18:31:18.346959504 -0400
+@@ -21,6 +21,8 @@
+ };
+ /* -l option; if nonzero, dmenu uses vertical list with given number of lines */
+ static unsigned int lines      = 0;
++static unsigned int maxhist    = 64;
++static int histnodup           = 1;	/* if 0, record repeated histories */
+ /* -h option; minimum height of a menu line */
+ static unsigned int lineheight = 0;
+ static unsigned int min_lineheight = 8;
+diff -ruN -x '*.orig' -x '*.rej' a/dmenu.1 b/dmenu.1
+--- a/dmenu.1	2026-09-03 18:31:18.326529022 -0400
++++ b/dmenu.1	2026-09-03 18:31:18.339072390 -0400
+@@ -32,6 +32,8 @@
+ .IR color ]
+ .RB [ \-w
+ .IR windowid ]
++.RB [ \-H
++.IR histfile ]
+ .P
+ .BR dmenu_run " ..."
+ .SH DESCRIPTION
+@@ -111,6 +113,9 @@
+ .TP
+ .BI \-w " windowid"
+ embed into windowid.
++.TP
++.BI \-H " histfile"
++save input in histfile and use it for history navigation.
+ .SH USAGE
+ dmenu is completely controlled by the keyboard.  Items are selected using the
+ arrow keys, page up, page down, home, and end.
+diff -ruN -x '*.orig' -x '*.rej' a/dmenu.c b/dmenu.c
+--- a/dmenu.c	2026-09-03 18:31:18.334998327 -0400
++++ b/dmenu.c	2026-09-03 18:31:18.347055746 -0400
+@@ -57,6 +57,10 @@
+ static Drw *drw;
+ static Clr *scheme[SchemeLast];
+ 
++static char *histfile;
++static char **history;
++static size_t histsz, histpos;
++
+ #include "config.h"
+ 
+ static int (*fstrncmp)(const char *, const char *, size_t) = strncmp;
+@@ -459,6 +463,129 @@
+ }
+ 
+ static void
++loadhistory(void)
++{
++	FILE *fp = NULL;
++	static size_t cap = 0;
++	size_t llen;
++	char *line;
++
++	if (!histfile) {
++		return;
++	}
++
++	fp = fopen(histfile, "r");
++	if (!fp) {
++		return;
++	}
++
++	for (;;) {
++		line = NULL;
++		llen = 0;
++		if (-1 == getline(&line, &llen, fp)) {
++			if (ferror(fp)) {
++				die("failed to read history");
++			}
++			free(line);
++			break;
++		}
++
++		if (cap == histsz) {
++			cap += 64 * sizeof(char*);
++			history = realloc(history, cap);
++			if (!history) {
++				die("failed to realloc memory");
++			}
++		}
++		strtok(line, "\n");
++		history[histsz] = line;
++		histsz++;
++	}
++	histpos = histsz;
++
++	if (fclose(fp)) {
++		die("failed to close file %s", histfile);
++	}
++}
++
++static void
++navhistory(int dir)
++{
++	static char def[BUFSIZ];
++	char *p = NULL;
++	size_t len = 0;
++
++	if (!history || histpos + 1 == 0)
++		return;
++
++	if (histsz == histpos) {
++		strncpy(def, text, sizeof(def));
++	}
++
++	switch(dir) {
++	case 1:
++		if (histpos < histsz - 1) {
++			p = history[++histpos];
++		} else if (histpos == histsz - 1) {
++			p = def;
++			histpos++;
++		}
++		break;
++	case -1:
++		if (histpos > 0) {
++			p = history[--histpos];
++		}
++		break;
++	}
++	if (p == NULL) {
++		return;
++	}
++
++	len = MIN(strlen(p), BUFSIZ - 1);
++	strncpy(text, p, len);
++	text[len] = '\0';
++	cursor = len;
++	match();
++}
++
++static void
++savehistory(char *input)
++{
++	unsigned int i;
++	FILE *fp;
++
++	if (!histfile ||
++	    0 == maxhist ||
++	    0 == strlen(input)) {
++		goto out;
++	}
++
++	fp = fopen(histfile, "w");
++	if (!fp) {
++		die("failed to open %s", histfile);
++	}
++	for (i = histsz < maxhist ? 0 : histsz - maxhist; i < histsz; i++) {
++		if (0 >= fprintf(fp, "%s\n", history[i])) {
++			die("failed to write to %s", histfile);
++		}
++	}
++	if (histsz == 0 || !histnodup || (histsz > 0 && strcmp(input, history[histsz-1]) != 0)) { /* TODO */
++		if (0 >= fputs(input, fp)) {
++			die("failed to write to %s", histfile);
++		}
++	}
++	if (fclose(fp)) {
++		die("failed to close file %s", histfile);
++	}
++
++out:
++	for (i = 0; i < histsz; i++) {
++		free(history[i]);
++	}
++	free(history);
++}
++
++static void
+ keypress(XKeyEvent *ev)
+ {
+ 	char buf[64];
+@@ -544,6 +671,14 @@
+ 		case XK_j: ksym = XK_Next;  break;
+ 		case XK_k: ksym = XK_Prior; break;
+ 		case XK_l: ksym = XK_Down;  break;
++		case XK_p:
++			navhistory(-1);
++			buf[0]=0;
++			break;
++		case XK_n:
++			navhistory(1);
++			buf[0]=0;
++			break;
+ 		default:
+ 			return;
+ 		}
+@@ -629,6 +764,8 @@
+ 	case XK_KP_Enter:
+ 		puts((sel && !(ev->state & ShiftMask)) ? sel->text : text);
+ 		if (!(ev->state & ControlMask)) {
++			savehistory((sel && !(ev->state & ShiftMask))
++				    ? sel->text : text);
+ 			cleanup();
+ 			exit(0);
+ 		}
+@@ -873,7 +1010,7 @@
+ {
+ 	die("usage: dmenu [-bFfiv] [-l lines] [-h height] [-p prompt] [-fn font] [-m monitor]\n"
+ 	    "             [-nb color] [-nf color] [-sb color] [-sf color]\n" \
+-	    "             [-nhb color] [-nhf color] [-shb color] [-shf color] [-w windowid]");
++	    "             [-nhb color] [-nhf color] [-shb color] [-shf color] [-w windowid] [-H histfile]");
+ }
+ 
+ int
+@@ -901,6 +1038,8 @@
+ 		} else if (i + 1 == argc)
+ 			usage();
+ 		/* these options take one argument */
++		else if (!strcmp(argv[i], "-H"))
++			histfile = argv[++i];
+ 		else if (!strcmp(argv[i], "-l"))   /* number of lines in vertical list */
+ 			lines = atoi(argv[++i]);
+ 		else if (!strcmp(argv[i], "-h")) { /* minimum height of one menu line */
+@@ -957,6 +1096,8 @@
+ 		die("pledge");
+ #endif
+ 
++	loadhistory();
++
+ 	if (fast && !isatty(0)) {
+ 		grabkeyboard();
+ 		readstdin();
+diff -ruN -x '*.orig' -x '*.rej' a/dmenu_run b/dmenu_run
+--- a/dmenu_run	2025-08-09 09:00:49.950267502 -0400
++++ b/dmenu_run	2026-09-03 18:31:18.339167280 -0400
+@@ -1,2 +1,2 @@
+ #!/bin/sh
+-dmenu_path | dmenu "$@" | ${SHELL:-"/bin/sh"} &
++dmenu_path | dmenu -H "${XDG_CACHE_HOME:-$HOME/.cache/}/dmenu_run.hist" "$@" | ${SHELL:-"/bin/sh"} &

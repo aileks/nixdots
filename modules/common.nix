@@ -5,25 +5,6 @@
   ...
 }:
 
-let
-  dwmPkg = pkgs.dwm.override {
-    conf = ../dwm/config.def.h;
-    patches = [
-      ../dwm/patches/actualfullscreen.diff
-      ../dwm/patches/restartsig.diff
-      ../dwm/patches/movestack.diff
-      ../dwm/patches/pertag.diff
-      ../dwm/patches/attachbelow.diff
-      ../dwm/patches/vanitygaps.diff
-      ../dwm/patches/status2d.diff
-      ../dwm/patches/systray.diff
-      ../dwm/patches/swallow.diff
-      ../dwm/patches/statuscmd-status2d.diff
-      ../dwm/patches/primarymon.diff
-    ];
-    extraLibs = [ pkgs.libxcb ];
-  };
-in
 {
   boot.loader = {
     limine = {
@@ -118,12 +99,12 @@ in
     xkb.options = "terminate:ctrl_alt_bksp";
     windowManager.dwm = {
       enable = true;
-      package = dwmPkg;
+      package = pkgs.dwm;
     };
     displayManager.sessionCommands = ''
       ${pkgs.xrandr}/bin/xrandr --output DP-0 --primary --mode 2560x1440 --rate 200.00 --pos 1080x0 \
         --output HDMI-0 --mode 1920x1080 --rate 200.00 --rotate left --pos 0x-240 || true
-      ${pkgs.xkbcomp}/bin/xkbcomp ${../hypr/keymap.xkb} "$DISPLAY"
+      ${pkgs.xkbcomp}/bin/xkbcomp ${../xorg/keymap.xkb} "$DISPLAY"
       ${pkgs.numlockx}/bin/numlockx on
       ${pkgs.xset}/bin/xset r rate 250 50
       ${pkgs.xset}/bin/xset s 600 5
@@ -146,10 +127,13 @@ in
     dconf.enable = true;
     nix-ld.enable = true;
     ydotool.enable = true;
-    hyprland = {
+    thunar = {
       enable = true;
-      withUWSM = true;
-      xwayland.enable = true;
+      plugins = with pkgs; [
+        thunar-archive-plugin
+        thunar-media-tags-plugin
+        thunar-volman
+      ];
     };
     system-config-printer.enable = true;
     zsh.enable = true;

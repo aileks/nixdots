@@ -1,0 +1,168 @@
+diff -ruN snap-newterm/config.def.h st-0.9.3/config.def.h
+--- snap-newterm/config.def.h	2026-09-03 18:28:42.655957962 -0400
++++ st-0.9.3/config.def.h	2026-09-03 18:28:42.665782740 -0400
+@@ -224,6 +224,7 @@
+ 	{ TERMMOD,              XK_Y,           selpaste,       {.i =  0} },
+ 	{ ShiftMask,            XK_Insert,      selpaste,       {.i =  0} },
+ 	{ TERMMOD,              XK_Num_Lock,    numlock,        {.i =  0} },
++	{ TERMMOD,              XK_Return,      newterm,        {.i =  0} },
+ 	{ ShiftMask,            XK_Page_Up,     kscrollup,      {.i = -1} },
+     { ShiftMask,            XK_Page_Down,   kscrolldown,    {.i = -1} },
+ };
+diff -ruN snap-newterm/config.def.h.orig st-0.9.3/config.def.h.orig
+--- snap-newterm/config.def.h.orig	2026-09-03 18:28:42.638974688 -0400
++++ st-0.9.3/config.def.h.orig	2026-09-03 18:28:42.655957962 -0400
+@@ -497,3 +497,39 @@
+ 	" !\"#$%&'()*+,-./0123456789:;<=>?"
+ 	"@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+ 	"`abcdefghijklmnopqrstuvwxyz{|}~";
++
++/* X resources to update */
++static const XResPref resources[] = {
++	/* name                    type     address */
++	{ "st.font",               STRING,  &font },
++	{ "st.color0",             STRING,  &colorname[0] },
++	{ "st.color1",             STRING,  &colorname[1] },
++	{ "st.color2",             STRING,  &colorname[2] },
++	{ "st.color3",             STRING,  &colorname[3] },
++	{ "st.color4",             STRING,  &colorname[4] },
++	{ "st.color5",             STRING,  &colorname[5] },
++	{ "st.color6",             STRING,  &colorname[6] },
++	{ "st.color7",             STRING,  &colorname[7] },
++	{ "st.color8",             STRING,  &colorname[8] },
++	{ "st.color9",             STRING,  &colorname[9] },
++	{ "st.color10",            STRING,  &colorname[10] },
++	{ "st.color11",            STRING,  &colorname[11] },
++	{ "st.color12",            STRING,  &colorname[12] },
++	{ "st.color13",            STRING,  &colorname[13] },
++	{ "st.color14",            STRING,  &colorname[14] },
++	{ "st.color15",            STRING,  &colorname[15] },
++	{ "st.foreground",         STRING,  &colorname[258] },
++	{ "st.background",         STRING,  &colorname[259] },
++	{ "st.cursorColor",        STRING,  &colorname[256] },
++	{ "st.cursorColorReverse", STRING,  &colorname[257] },
++	{ "st.termname",           STRING,  &termname },
++	{ "st.shell",              STRING,  &shell },
++	{ "st.minlatency",         INTEGER, &minlatency },
++	{ "st.maxlatency",         INTEGER, &maxlatency },
++	{ "st.blinktimeout",       INTEGER, &blinktimeout },
++	{ "st.bellvolume",         INTEGER, &bellvolume },
++	{ "st.tabspaces",          INTEGER, &tabspaces },
++	{ "st.borderpx",           INTEGER, &borderpx },
++	{ "st.cwscale",            FLOAT,   &cwscale },
++	{ "st.chscale",            FLOAT,   &chscale },
++};
+diff -ruN snap-newterm/st.c st-0.9.3/st.c
+--- snap-newterm/st.c	2026-09-03 18:28:42.641341564 -0400
++++ st-0.9.3/st.c	2026-09-03 18:28:42.657534426 -0400
+@@ -20,6 +20,8 @@
+ #include "st.h"
+ #include "win.h"
+ 
++extern char *argv0;
++
+ #if   defined(__linux)
+  #include <pty.h>
+ #elif defined(__OpenBSD__) || defined(__NetBSD__) || defined(__APPLE__)
+@@ -160,6 +162,7 @@
+ } STREscape;
+ 
+ static void execsh(char *, char **);
++static int chdir_by_pid(pid_t pid);
+ static void stty(char **);
+ static void sigchld(int);
+ static void ttywriteraw(const char *, size_t);
+@@ -813,6 +816,7 @@
+ 		if (pledge("stdio rpath tty proc", NULL) == -1)
+ 			die("pledge\n");
+ #endif
++		fcntl(m, F_SETFD, FD_CLOEXEC);
+ 		close(s);
+ 		cmdfd = m;
+ 		signal(SIGCHLD, sigchld);
+@@ -1059,6 +1063,40 @@
+ }
+ 
+ void
++newterm(const Arg* a)
++{
++	switch (fork()) {
++	case -1:
++		die("fork failed: %s\n", strerror(errno));
++		break;
++	case 0:
++		switch (fork()) {
++		case -1:
++			fprintf(stderr, "fork failed: %s\n", strerror(errno));
++			_exit(1);
++			break;
++		case 0:
++			chdir_by_pid(pid);
++			execl("/proc/self/exe", argv0, NULL);
++			_exit(1);
++			break;
++		default:
++			_exit(0);
++		}
++	default:
++		wait(NULL);
++	}
++}
++
++static int
++chdir_by_pid(pid_t pid)
++{
++	char buf[32];
++	snprintf(buf, sizeof buf, "/proc/%ld/cwd", (long)pid);
++	return chdir(buf);
++}
++
++void
+ tswapscreen(void)
+ {
+ 	Line *tmp = term.line;
+diff -ruN snap-newterm/st.c.orig st-0.9.3/st.c.orig
+--- snap-newterm/st.c.orig	2026-09-03 18:28:42.629767228 -0400
++++ st-0.9.3/st.c.orig	2026-09-03 18:28:42.641341564 -0400
+@@ -2764,7 +2764,8 @@
+ 	drawregion(0, 0, term.col, term.row);
+ 	if (term.scr == 0)
+ 		xdrawcursor(cx, term.c.y, term.line[term.c.y][cx],
+-				term.ocx, term.ocy, term.line[term.ocy][term.ocx]);
++			term.ocx, term.ocy, term.line[term.ocy][term.ocx],
++			term.line[term.ocy], term.col);
+ 	term.ocx = cx;
+ 	term.ocy = term.c.y;
+ 	xfinishdraw();
+diff -ruN snap-newterm/st.h st-0.9.3/st.h
+--- snap-newterm/st.h	2026-09-03 18:28:42.641417457 -0400
++++ st-0.9.3/st.h	2026-09-03 18:28:42.665836501 -0400
+@@ -83,6 +83,7 @@
+ void redraw(void);
+ void draw(void);
+ 
++void newterm(const Arg *);
+ void kscrolldown(const Arg *);
+ void kscrollup(const Arg *);
+ void printscreen(const Arg *);
+diff -ruN snap-newterm/st.h.orig st-0.9.3/st.h.orig
+--- snap-newterm/st.h.orig	2026-09-03 18:28:42.628680283 -0400
++++ st-0.9.3/st.h.orig	2026-09-03 18:28:42.641417457 -0400
+@@ -11,7 +11,8 @@
+ #define DIVCEIL(n, d)		(((n) + ((d) - 1)) / (d))
+ #define DEFAULT(a, b)		(a) = (a) ? (a) : (b)
+ #define LIMIT(x, a, b)		(x) = (x) < (a) ? (a) : (x) > (b) ? (b) : (x)
+-#define ATTRCMP(a, b)		((a).mode != (b).mode || (a).fg != (b).fg || \
++#define ATTRCMP(a, b)		(((a).mode & (~ATTR_WRAP)) != ((b).mode & (~ATTR_WRAP)) || \
++				(a).fg != (b).fg || \
+ 				(a).bg != (b).bg)
+ #define TIMEDIFF(t1, t2)	((t1.tv_sec-t2.tv_sec)*1000 + \
+ 				(t1.tv_nsec-t2.tv_nsec)/1E6)
+@@ -90,6 +91,7 @@
+ void toggleprinter(const Arg *);
+ 
+ int tattrset(int);
++int tisaltscr(void);
+ void tnew(int, int);
+ void tresize(int, int);
+ void tsetdirtattr(int);
