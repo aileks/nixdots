@@ -1,6 +1,6 @@
 {
   config,
-  inputs,
+  # inputs,
   installation,
   pkgs,
   ...
@@ -16,7 +16,7 @@ let
     persistencedSha256 = "sha256-aXmD2VY1RLlgAnlHhOUMWzvMyhI6JTClcFLm4imF/mA=";
   };
 
-  voxtypePackage = inputs.voxtype.packages.${pkgs.stdenv.hostPlatform.system}.onnx-cuda;
+  # voxtypePackage = inputs.voxtype.packages.${pkgs.stdenv.hostPlatform.system}.onnx-cuda;
 in
 {
   imports = [ ./hardware-configuration.nix ];
@@ -37,31 +37,31 @@ in
   home-manager.backupFileExtension = "backup";
 
   home-manager.users.${installation.user.name} = {
-    imports = [ inputs.voxtype.homeManagerModules.default ];
+    # imports = [ inputs.voxtype.homeManagerModules.default ];
 
     home.packages = with pkgs; [
       btop-cuda
     ];
 
-    programs.voxtype = {
-      enable = true;
-
-      package = voxtypePackage;
-
-      engine = "parakeet";
-
-      service.enable = true;
-
-      settings = {
-        parakeet = {
-          model = "parakeet-tdt-0.6b-v3";
-        };
-
-        output = {
-          mode = "type";
-          fallback_to_clipboard = true;
-        };
-      };
-    };
+    # programs.voxtype = {
+    #   enable = true;
+    #
+    #   package = voxtypePackage;
+    #
+    #   engine = "parakeet";
+    #
+    #   service.enable = true;
+    #
+    #   settings = {
+    #     parakeet = {
+    #       model = "parakeet-tdt-0.6b-v3";
+    #     };
+    #
+    #     output = {
+    #       mode = "type";
+    #       fallback_to_clipboard = true;
+    #     };
+    #   };
+    # };
   };
 }
