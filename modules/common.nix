@@ -159,6 +159,7 @@ in
 
   fonts.packages = with pkgs; [
     adwaita-fonts
+    iosevka-custom
     pkgs.nerd-fonts.symbols-only
     noto-fonts
     noto-fonts-cjk-sans

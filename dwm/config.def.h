@@ -26,8 +26,8 @@ static const char col_fg[]      = "#BBB3A9";
 static const char col_bg[]      = "#131210";
 static const char col_bright[]  = "#DDD5CA";
 static const char col_gray[]    = "#58534C";
-static const char col_accent[]  = "#D9A441";
-static const char col_border[]  = "#E17A3F";
+static const char col_accent[]  = "#E17A3F";
+static const char col_border[]  = "#D9A441";
 static const char col_red[]     = "#B34A45";
 static const char col_green[]   = "#879B5C";
 

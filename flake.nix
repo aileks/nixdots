@@ -36,6 +36,7 @@
         "papirus-cinder-grove"
         "fastmail-desktop"
         "tensaku"
+        "iosevka-custom"
       ];
       overlay = final: _prev: {
         mitishell = final.callPackage ./packages/mitishell.nix { };
@@ -43,6 +44,7 @@
         papirus-cinder-grove = final.callPackage ./packages/papirus-cinder-grove.nix { };
         fastmail-desktop = final.callPackage ./packages/fastmail-desktop.nix { };
         tensaku = final.callPackage ./packages/tensaku.nix { };
+        iosevka-custom = final.callPackage ./packages/iosevka-custom.nix { };
       };
       pkgs = import nixpkgs {
         inherit system;
