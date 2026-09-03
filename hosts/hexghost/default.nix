@@ -15,6 +15,17 @@ let
     settingsSha256 = "sha256-ZEMo8I8Zc2Tq6RVDNYpAH+f094dUaZiBqO+5f6lIjRI=";
     persistencedSha256 = "sha256-aXmD2VY1RLlgAnlHhOUMWzvMyhI6JTClcFLm4imF/mA=";
   };
+
+  system = pkgs.stdenv.hostPlatform.system;
+
+  voxtypePackage = pkgs.symlinkJoin {
+    name = "voxtype-vulkan-with-osd";
+
+    paths = [
+      inputs.voxtype.packages.${system}.vulkan
+      inputs.voxtype.packages.${system}.osd-gtk4
+    ];
+  };
 in
 {
   imports = [ ./hardware-configuration.nix ];
@@ -50,19 +61,25 @@ in
 
     programs.voxtype = {
       enable = true;
-
-      package = inputs.voxtype.packages.${pkgs.stdenv.hostPlatform.system}.vulkan;
-
+      package = voxtypePackage;
       engine = "whisper";
-
       model.name = "base.en";
-
       service.enable = true;
 
       settings = {
+        hotkey.enabled = false;
+        osd = {
+          enabled = true;
+          frontend = "gtk4";
+        };
         output = {
           mode = "type";
           fallback_to_clipboard = true;
+        };
+        notification = {
+          on_recording_start = false;
+          on_recording_stop = false;
+          on_transcription = false;
         };
       };
     };

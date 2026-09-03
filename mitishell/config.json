@@ -4,7 +4,7 @@
     "outputs": ["*"],
     "height": 36,
     "marginTop": 6,
-    "marginHorizontal": 5,
+    "marginHorizontal": 4,
     "systemMetrics": "separate",
     "layout": {
       "left": ["workspaces", "windowTitle"],
