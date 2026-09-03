@@ -248,6 +248,7 @@ in
         "x-scheme-handler/http" = [ "zen-twilight.desktop" ];
         "x-scheme-handler/https" = [ "zen-twilight.desktop" ];
         "x-scheme-handler/mailto" = [ "fastmail.desktop" ];
+        "inode/directory" = [ "org.gnome.Nautilus.desktop" ];
       };
     };
 
