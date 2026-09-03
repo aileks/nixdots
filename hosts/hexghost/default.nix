@@ -32,6 +32,8 @@ in
     nvidiaSettings = true;
   };
 
+  services.hardware.openrgb.enable = true;
+
   home-manager.backupFileExtension = "backup";
 
   home-manager.users.${installation.user.name} = {
@@ -39,7 +41,6 @@ in
 
     home.packages = with pkgs; [
       btop-cuda
-      openrgb
     ];
 
     programs.voxtype = {
