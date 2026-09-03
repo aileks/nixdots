@@ -1,5 +1,6 @@
 {
   config,
+  inputs,
   installation,
   pkgs,
   ...
@@ -14,6 +15,8 @@ let
     settingsSha256 = "sha256-ZEMo8I8Zc2Tq6RVDNYpAH+f094dUaZiBqO+5f6lIjRI=";
     persistencedSha256 = "sha256-aXmD2VY1RLlgAnlHhOUMWzvMyhI6JTClcFLm4imF/mA=";
   };
+
+  voxtypePackage = inputs.voxtype.packages.${pkgs.stdenv.hostPlatform.system}.onnx-cuda;
 in
 {
   imports = [ ./hardware-configuration.nix ];
@@ -32,30 +35,32 @@ in
   home-manager.backupFileExtension = "backup";
 
   home-manager.users.${installation.user.name} = {
+    imports = [ inputs.voxtype.homeManagerModules.default ];
+
     home.packages = with pkgs; [
-      voxtype-onnx
       btop-cuda
+      openrgb
     ];
 
-    systemd.user.services.voxtype = {
-      Unit = {
-        Description = "VoxType push-to-talk voice-to-text daemon";
-        PartOf = [ "graphical-session.target" ];
-        After = [
-          "graphical-session.target"
-          "pipewire.service"
-          "pipewire-pulse.service"
-        ];
-      };
+    programs.voxtype = {
+      enable = true;
 
-      Service = {
-        Type = "simple";
-        ExecStart = "${pkgs.voxtype-onnx}/bin/voxtype daemon";
-        Restart = "on-failure";
-        RestartSec = 5;
-      };
+      package = voxtypePackage;
 
-      Install.WantedBy = [ "graphical-session.target" ];
+      engine = "parakeet";
+
+      service.enable = true;
+
+      settings = {
+        parakeet = {
+          model = "parakeet-tdt-0.6b-v3";
+        };
+
+        output = {
+          mode = "type";
+          fallback_to_clipboard = true;
+        };
+      };
     };
   };
 }

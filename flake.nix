@@ -16,6 +16,8 @@
     };
 
     hyprsunset.url = "github:hyprwm/hyprsunset/v0.4.0";
+
+    voxtype.url = "github:peteonrails/voxtype/v1.0.1";
   };
 
   outputs =
