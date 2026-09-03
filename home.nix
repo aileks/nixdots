@@ -391,7 +391,13 @@ in
       activeOpacity = 1.0;
       inactiveOpacity = 0.95;
       shadow = true;
-      settings.use-damage = false;
+      settings = {
+        use-damage = false;
+        blur = {
+          method = "dual_kawase";
+          strength = 5;
+        };
+      };
     };
   };
 

@@ -6,7 +6,7 @@
   (_: {
     # avoids oom
     preBuild = ''
-      jobs=$(( $(nproc) / 1.5 ))
+      jobs=$(( $(nproc) ))
       [ "$jobs" -ge 1 ] || jobs=1
       export NIX_BUILD_CORES=$jobs
     '';
