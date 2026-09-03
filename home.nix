@@ -398,6 +398,7 @@ in
     hyprpolkitagent.Unit.ConditionEnvironment = "WAYLAND_DISPLAY";
     hyprsunset.Unit.ConditionEnvironment = "WAYLAND_DISPLAY";
     picom.Unit.ConditionEnvironment = "DISPLAY";
+    voxtype.Service.Environment = [ "YDOTOOL_SOCKET=/run/ydotoold/socket" ];
 
     dwmblocks = {
       Unit = {

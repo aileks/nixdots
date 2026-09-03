@@ -146,6 +146,7 @@ in
   programs = {
     dconf.enable = true;
     nix-ld.enable = true;
+    ydotool.enable = true;
     hyprland = {
       enable = true;
       withUWSM = true;
