@@ -1,7 +1,7 @@
 {
   "version": 2,
   "bar": {
-    "outputs": ["*"],
+    "outputs": ["DP-4"],
     "height": 36,
     "marginTop": 6,
     "marginHorizontal": 4,
@@ -42,7 +42,9 @@
   },
   "font": {
     "family": "Maple Mono",
-    "monoFamily": "Maple Mono NF"
+    "monoFamily": "Maple Mono NF",
+    "size": 15,
+    "monoSize": 15
   },
   "clipboard": {
     "enabled": true,
