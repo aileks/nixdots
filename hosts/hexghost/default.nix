@@ -1,6 +1,5 @@
 {
   config,
-  inputs,
   installation,
   pkgs,
   ...
@@ -30,7 +29,7 @@ in
     nvidiaSettings = true;
   };
 
-  home-manager.users.${installation.user.name}.home.packages = [
-    inputs.voxtype.packages.${pkgs.stdenv.hostPlatform.system}.onnx-cuda
+  home-manager.users.${installation.user.name}.home.packages = with pkgs; [
+    voxtype-onnx
   ];
 }
