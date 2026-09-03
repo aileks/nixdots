@@ -18,7 +18,8 @@ static const int topbar             = 1;        /* 0 means bottom bar */
 static const int vertpad            = 0;        /* vertical padding of bar */
 static const int sidepad            = 4;        /* horizontal padding of bar */
 static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
-static const char *fonts[]          = { "Iosevka Nerd Font:size=10" };
+static const char *fonts[] = { "Iosevka Custom:size=11", "Symbols Nerd Font Mono:size=11",
+};
 
 /* cinder grove palette */
 static const char col_fg[]      = "#BBB3A9";
