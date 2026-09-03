@@ -1,6 +1,6 @@
 {
   config,
-  # inputs,
+  inputs,
   installation,
   pkgs,
   ...
@@ -15,8 +15,6 @@ let
     settingsSha256 = "sha256-ZEMo8I8Zc2Tq6RVDNYpAH+f094dUaZiBqO+5f6lIjRI=";
     persistencedSha256 = "sha256-aXmD2VY1RLlgAnlHhOUMWzvMyhI6JTClcFLm4imF/mA=";
   };
-
-  # voxtypePackage = inputs.voxtype.packages.${pkgs.stdenv.hostPlatform.system}.onnx-cuda;
 in
 {
   imports = [ ./hardware-configuration.nix ];
@@ -32,36 +30,41 @@ in
     nvidiaSettings = true;
   };
 
+  programs.appimage = {
+    enable = true;
+    binfmt = true;
+  };
+
   services.hardware.openrgb.enable = true;
 
   home-manager.backupFileExtension = "backup";
 
   home-manager.users.${installation.user.name} = {
-    # imports = [ inputs.voxtype.homeManagerModules.default ];
+    imports = [
+      inputs.voxtype.homeManagerModules.default
+    ];
 
     home.packages = with pkgs; [
       btop-cuda
     ];
 
-    # programs.voxtype = {
-    #   enable = true;
-    #
-    #   package = voxtypePackage;
-    #
-    #   engine = "parakeet";
-    #
-    #   service.enable = true;
-    #
-    #   settings = {
-    #     parakeet = {
-    #       model = "parakeet-tdt-0.6b-v3";
-    #     };
-    #
-    #     output = {
-    #       mode = "type";
-    #       fallback_to_clipboard = true;
-    #     };
-    #   };
-    # };
+    programs.voxtype = {
+      enable = true;
+
+      package = inputs.voxtype.packages.${pkgs.stdenv.hostPlatform.system}.vulkan;
+
+      engine = "whisper";
+
+      model.name = "base.en";
+
+      service.enable = true;
+
+      settings = {
+        output = {
+          mode = "type";
+          fallback_to_clipboard = true;
+        };
+      };
+    };
   };
 }
