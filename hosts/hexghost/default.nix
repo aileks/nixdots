@@ -79,6 +79,7 @@ in
         osd = {
           enabled = true;
           frontend = "gtk4";
+          top_margin = 0.6;
         };
         output = {
           mode = "type";
