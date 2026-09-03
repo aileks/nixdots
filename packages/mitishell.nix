@@ -6,13 +6,13 @@
 
 buildGoModule rec {
   pname = "mitishell";
-  version = "1.3.3";
+  version = "1.3.4";
 
   src = fetchFromGitHub {
     owner = "aileks";
     repo = "mitishell";
-    rev = "7d95e3da30e2d0e2721934571115a975994e0032";
-    hash = "sha256-Ba5S8loMakR5NViSp80U6nv+3ZpJntmrkhtapAAmpRw=";
+    rev = "b196f61a419dc0df7b33da60ef5cf8c5d7f133dd";
+    hash = "sha256-g6RHFSQinkykkJux6oGA3ZvhR2kcJAMUP/Gfjg29kmo=";
   };
 
   vendorHash = "sha256-Ac63bZlBvCrhS7b8mk7aJdApI8UGtJxnZG35L37roGY=";
