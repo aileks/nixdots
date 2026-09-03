@@ -78,6 +78,9 @@ bind("SUPER + CTRL + Print", hl.dsp.exec_cmd("mitishell capture text"), "Extract
 bind("SUPER + Print", hl.dsp.exec_cmd("mitishell record region"), "Region recording")
 bind("SUPER + SHIFT + Print", hl.dsp.exec_cmd("mitishell record output"), "Output recording")
 
+bind("F9", hl.dsp.exec_cmd("voxtype record start"), "Push-to-talk dictation")
+bind("F9", hl.dsp.exec_cmd("voxtype record stop"), "Push-to-talk dictation", { release = true })
+
 bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("mitishell volume up"), "Volume up", media)
 bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("mitishell volume down"), "Volume down", media)
 bind("XF86AudioMute", hl.dsp.exec_cmd("mitishell volume mute"), "Mute audio", media)
