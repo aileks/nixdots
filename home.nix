@@ -87,6 +87,7 @@ in
       (with pkgs; [
         _7zz
         gnumake
+        cmake
         (lib.hiPrio gcc)
         clang
         bat
@@ -114,6 +115,7 @@ in
         nixd
         nixfmt
         tree-sitter
+        celluloid
         lazygit
         duckdb
         postgresql_18
@@ -163,8 +165,6 @@ in
         hunspellDicts.en_US
         (tesseract5.override { enableLanguages = [ "eng" ]; })
         tmux-sessionizer
-        yt-dlp
-        mpv
       ])
       ++ [ zenTwilight ];
 
