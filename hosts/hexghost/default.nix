@@ -29,7 +29,33 @@ in
     nvidiaSettings = true;
   };
 
-  home-manager.users.${installation.user.name}.home.packages = with pkgs; [
-    voxtype-onnx
-  ];
+  home-manager.backupFileExtension = "backup";
+
+  home-manager.users.${installation.user.name} = {
+    home.packages = with pkgs; [
+      voxtype-onnx
+      btop-cuda
+    ];
+
+    systemd.user.services.voxtype = {
+      Unit = {
+        Description = "VoxType push-to-talk voice-to-text daemon";
+        PartOf = [ "graphical-session.target" ];
+        After = [
+          "graphical-session.target"
+          "pipewire.service"
+          "pipewire-pulse.service"
+        ];
+      };
+
+      Service = {
+        Type = "simple";
+        ExecStart = "${pkgs.voxtype-onnx}/bin/voxtype daemon";
+        Restart = "on-failure";
+        RestartSec = 5;
+      };
+
+      Install.WantedBy = [ "graphical-session.target" ];
+    };
+  };
 }

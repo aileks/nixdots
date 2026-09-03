@@ -16,11 +16,6 @@
     };
 
     hyprsunset.url = "github:hyprwm/hyprsunset/v0.4.0";
-
-    voxtype = {
-      url = "github:peteonrails/voxtype/v1.0.1";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs =
@@ -74,7 +69,7 @@
                 home-manager = {
                   useGlobalPkgs = true;
                   useUserPackages = true;
-                  backupCommand = "${pkgs.trash-cli}/bin/trash-put";
+                  # backupCommand = "${pkgs.trash-cli}/bin/trash-put";
                   extraSpecialArgs = { inherit inputs installation; };
                   users.${installation.user.name} = import ./home.nix;
                 };

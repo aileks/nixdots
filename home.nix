@@ -118,7 +118,6 @@ in
         lazygit
         duckdb
         postgresql_18
-        btop
         cava
         fastfetch
         qalculate-gtk
