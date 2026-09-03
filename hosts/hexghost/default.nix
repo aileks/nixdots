@@ -30,10 +30,13 @@ in
 {
   imports = [ ./hardware-configuration.nix ];
 
+  boot.kernelParams = [ "acpi_enforce_resources=lax" ];
+
   networking.hostName = "hexghost";
 
   services.xserver.videoDrivers = [ "nvidia" ];
 
+  hardware.i2c.enable = true;
   hardware.nvidia = {
     modesetting.enable = true;
     open = true;
@@ -46,7 +49,10 @@ in
     binfmt = true;
   };
 
-  services.hardware.openrgb.enable = true;
+  services.hardware.openrgb = {
+    enable = true;
+    motherboard = "amd";
+  };
 
   home-manager.backupFileExtension = "backup";
 
