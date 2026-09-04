@@ -116,8 +116,8 @@ static const char *lockcmd[] = {"loginctl", "lock-session", NULL};
 static const char *emoticmd[] = {"bemoji", "-n", NULL};
 static const char *clipcmd[] = {"clipmenu", "-p", "clip", NULL};
 static const char *nightcmd[] = {"night-light", NULL};
-static const char *pickercmd[] = {
-    "sh", "-c", "xcolor -P '#%02x%02x%02x' | xclip -selection clipboard", NULL};
+static const char *pickercmd[] = {"sh", "-c",
+                                  "xcolor | xclip -selection clipboard", NULL};
 static const char *powercmd[] = {"power-menu", NULL};
 static const char *recordmenucmd[] = {"record-menu", NULL};
 
