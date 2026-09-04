@@ -96,6 +96,12 @@ in
   };
 
   hardware.i2c.enable = true;
+
+  # Suspend/resume testing is reliable with this receiver's wake disabled.
+  services.udev.extraRules = ''
+    ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{idProduct}=="c548", TEST=="power/wakeup", ATTR{power/wakeup}="disabled"
+  '';
+
   hardware.nvidia = {
     modesetting.enable = true;
     open = true;
