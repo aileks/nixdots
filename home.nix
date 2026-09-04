@@ -220,6 +220,7 @@ in
         python3
         uv
         nodejs
+        pnpm
         nixd
         nixfmt
         tree-sitter
