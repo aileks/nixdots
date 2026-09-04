@@ -184,6 +184,7 @@ in
         numlockx
         sxhkd
         wireplumber
+        xdotool
         xautolock
         xsecurelock
         xss-lock
