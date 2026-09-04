@@ -3,14 +3,22 @@
 set -Eeuo pipefail
 
 case ${1:-} in
-  up) ddcutil setvcp 10 + 10 ;;
-  down) ddcutil setvcp 10 - 10 ;;
+  up) operation=(ddcutil setvcp 10 + 10) ;;
+  down) operation=(ddcutil setvcp 10 - 10) ;;
   *)
     printf 'usage: brightness <up|down>\n' >&2
     exit 2
     ;;
 esac
 
-reading=$(ddcutil getvcp 10 --brief)
+if ! "${operation[@]}"; then
+  desktop-feedback status "Brightness change failed" || true
+  exit 1
+fi
+
+if ! reading=$(ddcutil getvcp 10 --brief); then
+  desktop-feedback status "Brightness state unavailable" || true
+  exit 1
+fi
 value=$(awk '{ printf "%.0f", $4 / $5 * 100 }' <<<"$reading")
-osd brightness "$value"
+desktop-feedback progress "$value" "Brightness $value%" || true

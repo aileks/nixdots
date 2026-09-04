@@ -2,9 +2,9 @@
 monitor = 0
 follow = none
 width = 380
-height = 120
+height = (0, 120)
 origin = top-right
-offset = 10x46
+offset = (10, 46)
 frame_width = 2
 frame_color = "#58534C"
 separator_color = frame
@@ -37,3 +37,12 @@ background = "#131210"
 foreground = "#DDD5CA"
 frame_color = "#B34A45"
 timeout = 0
+
+[desktop-feedback]
+appname = desktop-feedback
+format = "<b>%s</b>"
+icon_position = off
+highlight = "#E17A3F"
+timeout = 2
+history_ignore = yes
+override_pause_level = 100

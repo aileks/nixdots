@@ -22,7 +22,6 @@ let
     "qt6ct" = "qt6ct";
     "sxhkd" = "sxhkd";
     "tmux" = "tmux";
-    "xob/styles.cfg" = "xob/styles.cfg";
     "starship.toml" = "starship/starship.toml";
   };
   cinderGroveGtk = pkgs.cinder-grove-gtk;
@@ -76,58 +75,72 @@ let
       esac
     '';
   };
+  desktopFeedback = pkgs.writeShellApplication {
+    name = "desktop-feedback";
+    runtimeInputs = [ pkgs.dunst ];
+    text = builtins.readFile ./bin/desktop-feedback;
+  };
   nightLight = pkgs.writeShellApplication {
     name = "night-light";
-    runtimeInputs = [ pkgs.gammastep ];
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.coreutils
+      pkgs.gammastep
+    ];
     text = ''
       if [ -f /tmp/night-light-on ]; then
-        gammastep -x
-        rm -f /tmp/night-light-on
+        if gammastep -x; then
+          rm -f /tmp/night-light-on
+          desktop-feedback status "Night light off" || true
+        else
+          desktop-feedback status "Night light change failed" || true
+          exit 1
+        fi
       else
-        gammastep -O 3500
-        touch /tmp/night-light-on
+        if gammastep -O 3500; then
+          touch /tmp/night-light-on
+          desktop-feedback status "Night light on" || true
+        else
+          desktop-feedback status "Night light change failed" || true
+          exit 1
+        fi
       fi
     '';
   };
-  osd = pkgs.writeShellApplication {
-    name = "osd";
-    runtimeInputs = with pkgs; [ coreutils ];
-    text = builtins.readFile ./bin/osd;
-  };
-  osdDaemons = pkgs.writeShellApplication {
-    name = "osd-daemons";
-    runtimeInputs = with pkgs; [
-      coreutils
-      xob
-    ];
-    text = builtins.readFile ./bin/osd-daemons;
-  };
   volume = pkgs.writeShellApplication {
     name = "volume";
-    runtimeInputs = with pkgs; [
-      gawk
-      osd
-      procps
-      wireplumber
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.gawk
+      pkgs.procps
+      pkgs.wireplumber
     ];
     text = builtins.readFile ./bin/volume;
   };
   brightness = pkgs.writeShellApplication {
     name = "brightness";
-    runtimeInputs = with pkgs; [
-      ddcutil
-      gawk
-      osd
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.ddcutil
+      pkgs.gawk
     ];
     text = builtins.readFile ./bin/brightness;
   };
   dndToggle = pkgs.writeShellApplication {
     name = "dnd-toggle";
-    runtimeInputs = with pkgs; [
-      dunst
-      osd
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.dunst
     ];
     text = builtins.readFile ./bin/dnd-toggle;
+  };
+  microphoneMute = pkgs.writeShellApplication {
+    name = "microphone-mute";
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.wireplumber
+    ];
+    text = builtins.readFile ./bin/microphone-mute;
   };
   screenrecord = pkgs.writeShellApplication {
     name = "screenrecord";
@@ -231,7 +244,6 @@ in
         xclip
         maim
         slop
-        xob
         playerctl
         libnotify
         inotify-tools
@@ -257,6 +269,7 @@ in
         feh
         numlockx
         sxhkd
+        wiremix
         wireplumber
         xdotool
         xautolock
@@ -279,15 +292,15 @@ in
       ".local/bin/bar-sysinfo".source = lib.getExe barSysinfo;
       ".local/bin/bar-clock".source = lib.getExe barClock;
       ".local/bin/power-menu".source = lib.getExe powerMenu;
+      ".local/bin/desktop-feedback".source = lib.getExe desktopFeedback;
       ".local/bin/night-light".source = lib.getExe nightLight;
       ".local/bin/screenrecord".source = lib.getExe screenrecord;
       ".local/bin/desktop-screenshot".source = lib.getExe desktopScreenshot;
       ".local/bin/record-menu".source = lib.getExe recordMenu;
-      ".local/bin/osd".source = lib.getExe osd;
-      ".local/bin/osd-daemons".source = lib.getExe osdDaemons;
       ".local/bin/volume".source = lib.getExe volume;
       ".local/bin/brightness".source = lib.getExe brightness;
       ".local/bin/dnd-toggle".source = lib.getExe dndToggle;
+      ".local/bin/microphone-mute".source = lib.getExe microphoneMute;
       ".zshrc".source = createSymlink "zsh/zshrc";
       ".antidote/antidote.zsh".source = "${pkgs.antidote}/share/antidote/antidote.zsh";
     };
@@ -306,7 +319,6 @@ in
   xsession.initExtra = ''
     pkill -x xss-lock 2>/dev/null || true
     ${pkgs.xss-lock}/bin/xss-lock -l ${pkgs.xsecurelock}/bin/xsecurelock &
-    ${lib.getExe osdDaemons} >/dev/null 2>&1 &
   '';
 
   xresources.properties."Xft.dpi" = 96;

@@ -29,7 +29,7 @@ static const int swallowfloating =
     0; /* 1 means swallow floating windows by default */
 static const char *fonts[] = {
     "Iosevka Custom:size=11",
-    "Symbols Nerd Font Mono:size=10",
+    "Symbols Nerd Font:size=10",
 };
 
 /* cinder grove palette */
@@ -118,14 +118,12 @@ static const char *pickercmd[] = {"sh", "-c",
                                   "xcolor | xclip -selection clipboard", NULL};
 static const char *powercmd[] = {"power-menu", NULL};
 static const char *recordmenucmd[] = {"record-menu", NULL};
+static const char *audiocmd[] = {"st", "-e", "wiremix", NULL};
 
 static const char *volupcmd[] = {"volume", "up", NULL};
 static const char *voldowncmd[] = {"volume", "down", NULL};
 static const char *volmutecmd[] = {"volume", "mute", NULL};
-static const char *micmutecmd[] = {
-    "sh", "-c",
-    "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle; pkill -RTMIN+10 dwmblocks",
-    NULL};
+static const char *micmutecmd[] = {"microphone-mute", NULL};
 static const char *brightupcmd[] = {"brightness", "up", NULL};
 static const char *brightdowncmd[] = {"brightness", "down", NULL};
 static const char *dndcmd[] = {"dnd-toggle", NULL};
@@ -138,6 +136,7 @@ static Key keys[] = {
     {MODKEY, XK_w, spawn, {.v = browsercmd}},
     {MODKEY, XK_e, spawn, {.v = filescmd}},
     {MODKEY, XK_s, spawn, {.v = signalcmd}},
+    {MODKEY, XK_a, spawn, {.v = audiocmd}},
     {MODKEY, XK_m, spawn, {.v = mailcmd}},
     {MODKEY, XK_o, spawn, {.v = pickercmd}},
     {MODKEY, XK_v, spawn, {.v = clipcmd}},

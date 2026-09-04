@@ -25,6 +25,7 @@ sudo ./bin/install --hostname your-hostname
 | `Mod + W`         | browser (Zen)                |
 | `Mod + E`         | file manager (Thunar)        |
 | `Mod + S`         | Signal                       |
+| `Mod + A`         | audio mixer (Wiremix)        |
 | `Mod + M`         | Fastmail                     |
 | `Mod + V`         | clipboard history (clipmenu) |
 | `Mod + ;`         | emoji picker (bemoji)        |

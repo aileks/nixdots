@@ -4,22 +4,30 @@ set -Eeuo pipefail
 
 sink=@DEFAULT_AUDIO_SINK@
 case ${1:-} in
-  up) wpctl set-volume -l 1.0 "$sink" 5%+ ;;
-  down) wpctl set-volume -l 1.0 "$sink" 5%- ;;
-  mute) wpctl set-mute "$sink" toggle ;;
+  up) operation=(wpctl set-volume -l 1.0 "$sink" 5%+) ;;
+  down) operation=(wpctl set-volume -l 1.0 "$sink" 5%-) ;;
+  mute) operation=(wpctl set-mute "$sink" toggle) ;;
   *)
     printf 'usage: volume <up|down|mute>\n' >&2
     exit 2
     ;;
 esac
 
-state=$(wpctl get-volume "$sink")
+if ! "${operation[@]}"; then
+  desktop-feedback status "Volume change failed" || true
+  exit 1
+fi
+
+if ! state=$(wpctl get-volume "$sink"); then
+  desktop-feedback status "Volume state unavailable" || true
+  exit 1
+fi
 vol=${state#Volume: }
 value=$(awk -v v="$vol" 'BEGIN { printf "%.0f", v * 100 }')
-if [[ $vol == *'[MUTED]'* ]]; then
-  osd volume "$value" alternate
+if [[ $state == *'[MUTED]'* ]]; then
+  desktop-feedback progress "$value" "Volume muted" || true
 else
-  osd volume "$value"
+  desktop-feedback progress "$value" "Volume $value%" || true
 fi
 
 pkill -RTMIN+10 dwmblocks 2>/dev/null || true

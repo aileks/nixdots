@@ -2,9 +2,21 @@
 
 set -Eeuo pipefail
 
-dunstctl set-paused toggle
+if ! pause_level=$(dunstctl get-pause-level); then
+  desktop-feedback status "Do not disturb state unavailable" || true
+  exit 1
+fi
 
-# dunst is paused now, so a notification would be hidden; use the OSD instead
-if [[ $(dunstctl get-paused) == true ]]; then
-  osd dnd 100
+if ((pause_level > 0)); then
+  if ! dunstctl set-pause-level 0; then
+    desktop-feedback status "Do not disturb change failed" || true
+    exit 1
+  fi
+  desktop-feedback status "Do not disturb off" || true
+else
+  if ! dunstctl set-pause-level 90; then
+    desktop-feedback status "Do not disturb change failed" || true
+    exit 1
+  fi
+  desktop-feedback status "Do not disturb on" || true
 fi
