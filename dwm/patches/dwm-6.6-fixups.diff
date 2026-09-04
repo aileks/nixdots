@@ -20,8 +20,13 @@
  	int monitor;
  } Rule;
  
-@@ -251,6 +253,7 @@
+@@ -211,1 +213,2 @@
+-static long getstate(Window w);
++static long getstate(Window w);
++static pid_t getstatusbarpid();
+@@ -251,6 +253,8 @@
  static void sighup(int unused);
++static void sigstatusbar(const Arg *arg);
  static void sigterm(int unused);
  static void spawn(const Arg *arg);
 +static Monitor *systraytomon(Monitor *m);
@@ -45,7 +50,7 @@
  static int xerror(Display *dpy, XErrorEvent *ee);
  static int xerrordummy(Display *dpy, XErrorEvent *ee);
  static int xerrorstart(Display *dpy, XErrorEvent *ee);
-@@ -286,12 +293,15 @@
+@@ -286,12 +293,18 @@
  static pid_t winpid(Window w);
  
  /* variables */
@@ -53,6 +58,9 @@
  static const char broken[] = "broken";
 -static char stext[256];
 +static char stext[1024];
++static int statussig;
++static int statusw;
++static pid_t statuspid = -1;
  static int screen;
  static int sw, sh;           /* X display screen geometry width, height */
  static int bh;               /* bar height */
@@ -139,3 +147,66 @@
  				attachstack(c);
  			}
  			if (m == selmon)
+
+--- a/dwm.c
++++ b/dwm.c
+@@ -446,3 +446,28 @@
+-		else if (ev->x > selmon->ww - (int)TEXTW(stext) - getsystraywidth())
+-			click = ClkStatusText;
+-		else
++		else if (ev->x > selmon->ww - statusw - (int)getsystraywidth()) {
++			x = selmon->ww - statusw - (int)getsystraywidth();
++			click = ClkStatusText;
++
++			char *text, *s, ch;
++			statussig = 0;
++			for (text = s = stext; *s && x <= ev->x; s++) {
++				if ((unsigned char)(*s) < ' ') {
++					ch = *s;
++					*s = '\0';
++					x += TEXTW(text) - lrpad;
++					*s = ch;
++					text = s + 1;
++					if (x >= ev->x)
++						break;
++					statussig = ch;
++				} else if (*s == '^') {
++					*s = '\0';
++					x += TEXTW(text) - lrpad;
++					*s = '^';
++					if (*(++s) == 'f')
++						x += atoi(++s);
++					while (*(s++) != '^');
++					text = s;
++					s--;
++				}
++			}
++		} else
+
+--- a/dwm.c
++++ b/dwm.c
+@@ -1044,1 +1044,1 @@
+-		tw = m->ww - drawstatusbar(m, bh, stext);
++		tw = statusw = m->ww - drawstatusbar(m, bh, stext);
+
+--- a/dwm.c
++++ b/dwm.c
+@@ -2106,2 +2106,16 @@
+-void
+-spawn(const Arg *arg)
++void
++sigstatusbar(const Arg *arg)
++{
++	union sigval sv;
++
++	if (!statussig)
++		return;
++	sv.sival_int = arg->i;
++	if ((statuspid = getstatusbarpid()) <= 0)
++		return;
++
++	sigqueue(statuspid, SIGRTMIN+statussig, sv);
++}
++
++void
++spawn(const Arg *arg)

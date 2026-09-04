@@ -48,7 +48,7 @@ let
   attachbelow =
     upstreamPatch "dwm-attachbelow"
       "https://dwm.suckless.org/patches/attachbelow/dwm-attachbelow-6.2.diff"
-    "sha256-Apy+bRQG/MgnJYgrT1aJ6tMrSaK89Ud1nFA/G8NdyqI=";
+      "sha256-Apy+bRQG/MgnJYgrT1aJ6tMrSaK89Ud1nFA/G8NdyqI=";
   patchesAfterAttachbelow = [
     (upstreamPatch "dwm-cfacts-vanitygaps"
       "https://dwm.suckless.org/patches/vanitygaps/dwm-cfacts-vanitygaps-6.4_combo.diff"
@@ -61,11 +61,15 @@ let
   ];
   swallow =
     upstreamPatch "dwm-swallow" "https://dwm.suckless.org/patches/swallow/dwm-swallow-6.3.diff"
-    "sha256-aQvD6pWGOHG9n8RwCEMMDJhjcwzN52/EJmTGcNHLLGA=";
+      "sha256-aQvD6pWGOHG9n8RwCEMMDJhjcwzN52/EJmTGcNHLLGA=";
   status2dBarpaddingSystray =
     upstreamPatch "dwm-status2d-barpadding-systray"
       "https://dwm.suckless.org/patches/status2d/dwm-status2d-barpadding-systray-20241014-b663875.diff"
-    "sha256-qY42EJUQXguzS6Gs5ZDDbbfErhPM77EW2dvMIR2KxWQ=";
+      "sha256-qY42EJUQXguzS6Gs5ZDDbbfErhPM77EW2dvMIR2KxWQ=";
+  statuscmdStatus2d =
+    upstreamPatch "dwm-statuscmd-status2d"
+      "https://dwm.suckless.org/patches/statuscmd/dwm-statuscmd-status2d-20210405-60bb3df.diff"
+      "sha256-d7kkM6o+K9KbpEyTkdyJZRBHhN4Lb7cLX3JFb4q+zs4=";
 in
 (dwm.override {
   conf = ../dwm/config.def.h;
@@ -83,6 +87,7 @@ in
       ${lib.concatMapStringsSep "\n" strictPatch patchesAfterAttachbelow}
       ${patchWithKnownConflicts swallow 0 5}
       ${patchWithKnownConflicts status2dBarpaddingSystray 0 6}
+      ${patchWithKnownConflicts statuscmdStatus2d 0 6}
       patch -p1 --batch --forward --fuzz=0 < ${../dwm/patches/dwm-6.6-fixups.diff}
       runHook postPatch
     '';
