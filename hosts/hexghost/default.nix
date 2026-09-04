@@ -43,7 +43,6 @@ in
     package = nvidiaDriver;
     nvidiaSettings = true;
     powerManagement.enable = true;
-    powerManagement.kernelSuspendNotifier = false;
   };
 
   programs.appimage = {
