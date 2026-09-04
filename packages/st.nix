@@ -88,7 +88,7 @@ let
   ];
 in
 (st.override {
-  conf = builtins.readFile ../st/config.def.h;
+  conf = builtins.readFile ../config/st/config.def.h;
   extraLibs = [ harfbuzz ];
 }).overrideAttrs
   (old: {
@@ -97,7 +97,7 @@ in
     patchPhase = ''
       runHook prePatch
       ${lib.concatMapStringsSep "\n" applyPatch patches}
-      patch -p1 --batch --forward --fuzz=0 < ${../st/patches/st-0.9.3-fixups.diff}
+      patch -p1 --batch --forward --fuzz=0 < ${../config/st/patches/st-0.9.3-fixups.diff}
       runHook postPatch
     '';
   })

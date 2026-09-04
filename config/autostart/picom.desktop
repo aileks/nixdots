@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=picom
+# Home Manager starts picom.service with the generated configuration.
+Hidden=true

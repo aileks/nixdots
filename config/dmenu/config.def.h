@@ -8,6 +8,7 @@ static const unsigned int alphas[SchemeLast][2] = {
     [SchemeNorm] = {OPAQUE, alpha}, [SchemeSel] = {OPAQUE, alpha}};
 static int centered = 1;    /* -c option; centers dmenu on screen */
 static int min_width = 640; /* minimum width when centered */
+static int max_width = 960; /* maximum width when centered */
 static const float menu_height_ratio =
     4.0f; /* This is the ratio used in the original calculation */
 /* -fn option overrides fonts[0]; default X11 font or font set */

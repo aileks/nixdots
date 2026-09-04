@@ -6,6 +6,8 @@
 }:
 
 {
+  boot.kernelPackages = pkgs.linuxPackages_latest;
+
   boot.loader = {
     limine = {
       enable = true;
@@ -104,7 +106,7 @@
       ${pkgs.xrandr}/bin/xrandr --output DP-0 --primary --mode 2560x1440 --rate 200.00 --pos 1080x240 \
         --output HDMI-0 --mode 1920x1080 --rate 200.00 --rotate left --pos 0x0 || true
       ${pkgs.gnome-keyring}/bin/gnome-keyring-daemon --start --components=secrets || true
-      ${pkgs.xkbcomp}/bin/xkbcomp ${../xorg/keymap.xkb} "$DISPLAY"
+      ${pkgs.xkbcomp}/bin/xkbcomp ${../config/xorg/keymap.xkb} "$DISPLAY"
       ${pkgs.numlockx}/bin/numlockx on
       ${pkgs.xset}/bin/xset r rate 250 50
       ${pkgs.xset}/bin/xset s 600 5

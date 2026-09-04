@@ -41,7 +41,12 @@
       overlay = final: prev: {
         dwm = import ./packages/dwm.nix {
           dwm = prev.dwm;
-          inherit (prev) fetchpatch lib libxcb;
+          inherit (prev)
+            fetchpatch
+            lib
+            libxcb
+            libxcursor
+            ;
         };
         dmenu = import ./packages/dmenu.nix {
           dmenu = prev.dmenu;
@@ -114,13 +119,13 @@
             chmod -R u+w source
             cd source
 
-            find . -path ./nvim -prune -o -name '*.nix' -print0 \
+            find . -path ./config/nvim -prune -o -name '*.nix' -print0 \
               | xargs -0 -r nixfmt --check
             shellcheck bin/*
             shfmt -d -i 2 -ci -bn bin/*
-            zsh -n zsh/zshrc
-            find nvim -type f -name '*.lua' -exec luac -p {} \;
-            xmllint --noout fontconfig/fonts.conf bat/themes/cinder-grove.tmTheme
+            zsh -n config/zsh/zshrc
+            find config/nvim -type f -name '*.lua' -exec luac -p {} \;
+            xmllint --noout config/fontconfig/fonts.conf config/bat/themes/cinder-grove.tmTheme
 
             touch "$out"
           '';

@@ -5,7 +5,10 @@ case "$button" in
   1 | 3) wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle ;;
 esac
 
-state=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)
+if ! state=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null); then
+  printf '^c#58534C^n/a^d^'
+  exit 0
+fi
 vol=${state#Volume: }
 if [[ "$vol" == *'[MUTED]'* ]]; then
   printf '^c#B34A45^mute^d^'

@@ -10,8 +10,9 @@
 let
   graphicalSessionTarget = "graphical-session.target";
   repo = "${config.home.homeDirectory}/${installation.repositoryDirectory}";
-  createSymlink = path: config.lib.file.mkOutOfStoreSymlink "${repo}/${path}";
+  createSymlink = path: config.lib.file.mkOutOfStoreSymlink "${repo}/config/${path}";
   configFiles = {
+    "autostart/picom.desktop" = "autostart/picom.desktop";
     "bat" = "bat";
     "btop" = "btop";
     "cava" = "cava";
@@ -318,6 +319,13 @@ in
   };
 
   xsession.enable = true;
+  xsession.importedVariables = [
+    "XCURSOR_THEME"
+    "XCURSOR_SIZE"
+    "XCURSOR_PATH"
+    "XDG_CURRENT_DESKTOP"
+    "QT_QPA_PLATFORMTHEME"
+  ];
   xsession.initExtra = ''
     pkill -x xss-lock 2>/dev/null || true
     ${pkgs.xss-lock}/bin/xss-lock -l ${pkgs.xsecurelock}/bin/xsecurelock &
@@ -375,6 +383,7 @@ in
 
   xdg = {
     enable = true;
+    autostart.enable = true;
     userDirs = {
       enable = true;
       createDirectories = true;
@@ -392,7 +401,7 @@ in
 
     configFile = lib.mapAttrs (_: path: { source = createSymlink path; }) configFiles;
 
-    dataFile."backgrounds/fantasy-woods.jpg".source = ./wallpaper/fantasy-woods.jpg;
+    dataFile."backgrounds/fantasy-woods.jpg".source = ./config/wallpaper/fantasy-woods.jpg;
   };
 
   services = {

@@ -72,7 +72,7 @@ let
   ];
 in
 (dmenu.override {
-  conf = ../dmenu/config.def.h;
+  conf = ../config/dmenu/config.def.h;
 }).overrideAttrs
   (old: {
     # navhistory-with-search pulls in libm
@@ -82,7 +82,8 @@ in
     patchPhase = ''
       runHook prePatch
       ${lib.concatMapStringsSep "\n" applyPatch patches}
-      patch -p1 --batch --forward --fuzz=0 < ${../dmenu/patches/dmenu-5.4-fixups.diff}
+      patch -p1 --batch --forward --fuzz=0 < ${../config/dmenu/patches/dmenu-5.4-fixups.diff}
+      patch -p1 --batch --forward --fuzz=0 < ${../config/dmenu/patches/dmenu-max-width.diff}
       runHook postPatch
     '';
   })

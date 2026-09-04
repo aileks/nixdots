@@ -1,7 +1,7 @@
 { iosevka }:
 (iosevka.override {
   set = "Custom";
-  privateBuildPlan = builtins.readFile ./iosevka-custom.toml;
+  privateBuildPlan = builtins.readFile ../config/iosevka/iosevka-custom.toml;
 }).overrideAttrs
   (_: {
     # avoids oom

@@ -3,6 +3,7 @@
   fetchpatch,
   lib,
   libxcb,
+  libxcursor,
 }:
 let
   upstreamPatch = name: url: hash: {
@@ -72,12 +73,14 @@ let
       "sha256-d7kkM6o+K9KbpEyTkdyJZRBHhN4Lb7cLX3JFb4q+zs4=";
 in
 (dwm.override {
-  conf = ../dwm/config.def.h;
+  conf = ../config/dwm/config.def.h;
   extraLibs = [
     libxcb
+    libxcursor
   ];
 }).overrideAttrs
   (old: {
+    NIX_LDFLAGS = "-lXcursor";
     # Keep upstream patches unchanged. Known overlaps are integrated by the
     # local 6.6 fixup, while unexpected reject counts fail the build.
     patchPhase = ''
@@ -88,7 +91,8 @@ in
       ${patchWithKnownConflicts swallow 0 5}
       ${patchWithKnownConflicts status2dBarpaddingSystray 0 6}
       ${patchWithKnownConflicts statuscmdStatus2d 0 6}
-      patch -p1 --batch --forward --fuzz=0 < ${../dwm/patches/dwm-6.6-fixups.diff}
+      patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-6.6-fixups.diff}
+      patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-themed-cursors.diff}
       runHook postPatch
     '';
   })

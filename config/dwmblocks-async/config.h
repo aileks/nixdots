@@ -18,7 +18,7 @@
 
 // Define blocks for the status feed as X(icon, cmd, interval, signal).
 #define BLOCKS(X)                \
-    X(" ", "bar-volume", 0, 10) \
+    X(" ", "bar-volume", 2, 10) \
     X(" ", "bar-sysinfo", 10, 3) \
     X(" ", "bar-clock", 1, 4)
 

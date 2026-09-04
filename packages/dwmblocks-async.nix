@@ -19,7 +19,7 @@ stdenv.mkDerivation {
   buildInputs = [ xcbutil ];
 
   postPatch = ''
-    cp ${../dwmblocks-async/config.h} config.h
+    cp ${../config/dwmblocks-async/config.h} config.h
   '';
 
   makeFlags = [ "PREFIX=$(out)" ];
