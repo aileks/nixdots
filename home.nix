@@ -239,7 +239,7 @@ in
         bitwarden-desktop
         signal-desktop
         fastmail-desktop
-        libreoffice-fresh
+        onlyoffice-desktopeditors
         chromium
         polkit_gnome
         gammastep
