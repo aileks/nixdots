@@ -16,6 +16,60 @@ let
     persistencedSha256 = "sha256-aXmD2VY1RLlgAnlHhOUMWzvMyhI6JTClcFLm4imF/mA=";
   };
 
+  xorgSuspendVt = pkgs.writeShellScript "xorg-suspend-vt" ''
+    set -eu
+    umask 077
+
+    state_file=/run/xorg-suspend-vt
+
+    validate_vt() {
+      case "$1" in
+        "" | *[!0-9]*) return 1 ;;
+      esac
+
+      [ "$1" -ge 1 ] && [ "$1" -le 63 ]
+    }
+
+    case "''${1-}" in
+      pre)
+        ${pkgs.coreutils}/bin/rm -f "$state_file"
+
+        if ! active_session="$(${pkgs.systemd}/bin/loginctl show-seat seat0 --property=ActiveSession --value)"; then
+          exit 0
+        fi
+        [ -n "$active_session" ] || exit 0
+
+        session_type="$(${pkgs.systemd}/bin/loginctl show-session "$active_session" --property=Type --value)"
+        [ "$session_type" = x11 ] || exit 0
+
+        active_vt="$(${pkgs.systemd}/bin/loginctl show-session "$active_session" --property=VTNr --value)"
+        if ! validate_vt "$active_vt"; then
+          echo "invalid Xorg VT: $active_vt" >&2
+          exit 1
+        fi
+
+        printf '%s\n' "$active_vt" > "$state_file"
+        ${pkgs.kbd}/bin/chvt 63
+        ;;
+      post)
+        [ -s "$state_file" ] || exit 0
+        IFS= read -r active_vt < "$state_file"
+
+        if ! validate_vt "$active_vt"; then
+          echo "invalid saved Xorg VT: $active_vt" >&2
+          exit 1
+        fi
+
+        ${pkgs.kbd}/bin/chvt "$active_vt"
+        ${pkgs.coreutils}/bin/rm -f "$state_file"
+        ;;
+      *)
+        echo "usage: $0 pre|post" >&2
+        exit 2
+        ;;
+    esac
+  '';
+
   system = pkgs.stdenv.hostPlatform.system;
 
   voxtypePackage = pkgs.symlinkJoin {
@@ -34,7 +88,12 @@ in
 
   networking.hostName = "hexghost";
 
-  services.xserver.videoDrivers = [ "nvidia" ];
+  services.xserver = {
+    videoDrivers = [ "nvidia" ];
+    deviceSection = ''
+      Option "HardDPMS" "false"
+    '';
+  };
 
   hardware.i2c.enable = true;
   hardware.nvidia = {
@@ -42,7 +101,15 @@ in
     open = true;
     package = nvidiaDriver;
     nvidiaSettings = true;
-    powerManagement.enable = true;
+    powerManagement = {
+      enable = true;
+      kernelSuspendNotifier = true;
+    };
+  };
+
+  systemd.services.systemd-suspend.serviceConfig = {
+    ExecStartPre = "${xorgSuspendVt} pre";
+    ExecStopPost = "${xorgSuspendVt} post";
   };
 
   programs.appimage = {
