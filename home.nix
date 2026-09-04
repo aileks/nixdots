@@ -534,6 +534,21 @@ in
       Install.WantedBy = [ graphicalSessionTarget ];
     };
 
+    xidle-suspend = {
+      Unit = {
+        Description = "Suspend after 30 minutes of inactivity";
+        ConditionEnvironment = "DISPLAY";
+        PartOf = [ graphicalSessionTarget ];
+        After = [ graphicalSessionTarget ];
+      };
+      Service = {
+        ExecStart = "${pkgs.xautolock}/bin/xautolock -time 30 -detectsleep -locker '${pkgs.systemd}/bin/systemctl suspend'";
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+      Install.WantedBy = [ graphicalSessionTarget ];
+    };
+
   };
 
   programs.home-manager.enable = true;
