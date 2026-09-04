@@ -12,7 +12,7 @@ static const float menu_height_ratio =
     4.0f; /* This is the ratio used in the original calculation */
 /* -fn option overrides fonts[0]; default X11 font or font set */
 static const char *fonts[] = {"Iosevka Custom:size=16",
-                              "Symbols Nerd Font Mono:size=14"};
+                              "Symbols Nerd Font:size=14"};
 static const char *prompt = "run";
 static const char *colors[SchemeLast][2] = {
     /*     fg         bg       */

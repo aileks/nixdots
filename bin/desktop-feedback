@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+kind=${1:-}
+shift || true
+
+case $kind in
+  status)
+    (($#)) || {
+      printf 'usage: desktop-feedback status <summary>\n' >&2
+      exit 2
+    }
+    dunstify \
+      --app-name desktop-feedback \
+      --stack-tag desktop-feedback \
+      --transient \
+      --expire-time 1800 \
+      "$*"
+    ;;
+  progress)
+    value=${1:-}
+    shift || true
+    if [[ ! $value =~ ^[0-9]+$ ]] || ((value < 0 || value > 100)) || (($# == 0)); then
+      printf 'usage: desktop-feedback progress <0-100> <summary>\n' >&2
+      exit 2
+    fi
+    dunstify \
+      --app-name desktop-feedback \
+      --stack-tag desktop-feedback \
+      --transient \
+      --expire-time 1800 \
+      --hint "int:value:$value" \
+      "$*"
+    ;;
+  *)
+    printf 'usage: desktop-feedback <status|progress> ...\n' >&2
+    exit 2
+    ;;
+esac

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+source=@DEFAULT_AUDIO_SOURCE@
+if ! wpctl set-mute "$source" toggle; then
+  desktop-feedback status "Microphone change failed" || true
+  exit 1
+fi
+
+if ! state=$(wpctl get-volume "$source"); then
+  desktop-feedback status "Microphone state unavailable" || true
+  exit 1
+fi
+
+if [[ $state == *'[MUTED]'* ]]; then
+  desktop-feedback status "Microphone muted" || true
+else
+  desktop-feedback status "Microphone unmuted" || true
+fi

@@ -8,7 +8,7 @@
 static char *font = "Iosevka Custom:size=14";
 /* Spare fonts */
 static char *font2[] = {
-    "Symbols Nerd Font Mono:size=12",
+    "Symbols Nerd Font:size=12",
 };
 
 static int borderpx = 4;
