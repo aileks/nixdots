@@ -70,9 +70,10 @@ diff --git a/dwm.c b/dwm.c
 index bb95e26..286eecd 100644
 --- a/dwm.c
 +++ b/dwm.c
-@@ -205,5 +205,7 @@ static void setup(void);
+@@ -205,6 +205,8 @@ static void setup(void);
  static void seturgent(Client *c, int urg);
  static void showhide(Client *c);
+ static void sigchld(int unused);
 +static void sighup(int unused);
 +static void sigterm(int unused);
  static void spawn(const Arg *arg);
@@ -94,15 +95,16 @@ index bb95e26..286eecd 100644
  	running = 0;
  }
  
-@@ -1536,5 +1540,8 @@ setup(void)
- 	sa.sa_handler = SIG_IGN;
- 	sigaction(SIGCHLD, &sa, NULL);
+@@ -1536,6 +1540,9 @@ setup(void)
+ 	/* clean up any zombies immediately */
+ 	sigchld(0);
  
 +	signal(SIGHUP, sighup);
 +	signal(SIGTERM, sigterm);
 +
  	/* init screen */
  	screen = DefaultScreen(dpy);
+ 	sw = DisplayWidth(dpy, screen);
 @@ -1637,6 +1644,20 @@ sigchld(int unused)
  }
  

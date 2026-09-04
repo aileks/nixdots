@@ -1,0 +1,57 @@
+--- a/dmenu.c
++++ b/dmenu.c
+@@ -1042,9 +1042,10 @@
+ static void
+ usage(void)
+ {
+-	die("usage: dmenu [-bfiv] [-l lines] [-h height] [-p prompt] [-fn font] [-m monitor]\n"
++	die("usage: dmenu [-bFfiv] [-l lines] [-h height] [-p prompt] [-fn font] [-m monitor]\n"
+ 	    "             [-nb color] [-nf color] [-sb color] [-sf color]\n"
+-	    "             [-nhb color] [-nhf color] [-shb color] [-shf color] [-w windowid]");
++	    "             [-nhb color] [-nhf color] [-shb color] [-shf color] [-w windowid]\n"
++	    "             [-H histfile]");
+ }
+ 
+ int
+--- a/drw.c
++++ b/drw.c
+@@ -170,21 +170,22 @@
+ }
+ 
+ void
+-drw_clr_create(Drw *drw, Clr *dest, const char *clrname)
++drw_clr_create(Drw *drw, Clr *dest, const char *clrname, unsigned int alpha)
+ {
+ 	if (!drw || !dest || !clrname)
+ 		return;
+ 
+-	if (!XftColorAllocName(drw->dpy, DefaultVisual(drw->dpy, drw->screen),
+-	                       DefaultColormap(drw->dpy, drw->screen),
++	if (!XftColorAllocName(drw->dpy, drw->visual, drw->cmap,
+ 	                       clrname, dest))
+ 		die("error, cannot allocate color '%s'", clrname);
++
++	dest->pixel = (dest->pixel & 0x00ffffffU) | (alpha << 24);
+ }
+ 
+ /* Wrapper to create color schemes. The caller has to call free(3) on the
+  * returned color scheme when done using it. */
+ Clr *
+-drw_scm_create(Drw *drw, const char *clrnames[], size_t clrcount)
++drw_scm_create(Drw *drw, const char *clrnames[], size_t clrcount, const unsigned int alphas[])
+ {
+ 	size_t i;
+ 	Clr *ret;
+--- a/drw.h
++++ b/drw.h
+@@ -42,8 +42,8 @@
+ void drw_font_getexts(Fnt *font, const char *text, unsigned int len, unsigned int *w, unsigned int *h);
+ 
+ /* Colorscheme abstraction */
+-void drw_clr_create(Drw *drw, Clr *dest, const char *clrname);
+-Clr *drw_scm_create(Drw *drw, const char *clrnames[], size_t clrcount);
++void drw_clr_create(Drw *drw, Clr *dest, const char *clrname, unsigned int alpha);
++Clr *drw_scm_create(Drw *drw, const char *clrnames[], size_t clrcount, const unsigned int alphas[]);
+ 
+ /* Cursor abstraction */
+ Cur *drw_cur_create(Drw *drw, int shape);

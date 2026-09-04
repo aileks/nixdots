@@ -226,7 +226,7 @@ in
   gtk = {
     enable = true;
     font = {
-      name = "Adwaita Mono";
+      name = "Adwaita Sans";
       size = 11;
       package = pkgs.adwaita-fonts;
     };

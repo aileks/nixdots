@@ -23,10 +23,10 @@ index a2ac963..33efa5b 100644
  static const char *termcmd[]  = { "st", NULL };
  
 +#include "movestack.c"
- static const Key keys[] = {
+ static Key keys[] = {
  	/* modifier                     key        function        argument */
  	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
-@@ -71,6 +72,8 @@ static const Key keys[] = {
+@@ -71,6 +72,8 @@ static Key keys[] = {
  	{ MODKEY,                       XK_d,      incnmaster,     {.i = -1 } },
  	{ MODKEY,                       XK_h,      setmfact,       {.f = -0.05} },
  	{ MODKEY,                       XK_l,      setmfact,       {.f = +0.05} },

@@ -102,8 +102,9 @@
       package = pkgs.dwm;
     };
     displayManager.sessionCommands = ''
-      ${pkgs.xrandr}/bin/xrandr --output DP-0 --primary --mode 2560x1440 --rate 200.00 --pos 1080x0 \
-        --output HDMI-0 --mode 1920x1080 --rate 200.00 --rotate left --pos 0x-240 || true
+      ${pkgs.xrandr}/bin/xrandr --output DP-0 --primary --mode 2560x1440 --rate 200.00 --pos 1080x240 \
+        --output HDMI-0 --mode 1920x1080 --rate 200.00 --rotate left --pos 0x0 || true
+      ${pkgs.gnome-keyring}/bin/gnome-keyring-daemon --start --components=secrets || true
       ${pkgs.xkbcomp}/bin/xkbcomp ${../xorg/keymap.xkb} "$DISPLAY"
       ${pkgs.numlockx}/bin/numlockx on
       ${pkgs.xset}/bin/xset r rate 250 50
@@ -115,6 +116,12 @@
   services.libinput = {
     enable = true;
     mouse.accelProfile = "flat";
+  };
+
+  xdg.portal = {
+    enable = true;
+    extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    config.common.default = "gtk";
   };
 
   virtualisation.podman = {

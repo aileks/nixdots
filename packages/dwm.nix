@@ -1,23 +1,37 @@
 {
   dwm,
+  lib,
   libxcb,
+  libxres,
 }:
-dwm.override {
-  conf = ../dwm/config.def.h;
+let
+  patch = p: "patch -p1 --fuzz=3 --no-backup-if-mismatch < ${../dwm/patches + "/${p}"} || true";
   patches = [
-    ../dwm/patches/actualfullscreen.diff
-    ../dwm/patches/restartsig.diff
-    ../dwm/patches/movestack.diff
-    ../dwm/patches/pertag.diff
-    ../dwm/patches/attachbelow.diff
-    ../dwm/patches/vanitygaps.diff
-    ../dwm/patches/cfacts.diff
-    ../dwm/patches/alwayscenter.diff
-    ../dwm/patches/status2d.diff
-    ../dwm/patches/systray.diff
-    ../dwm/patches/swallow.diff
-    ../dwm/patches/statuscmd-status2d.diff
-    ../dwm/patches/primarymon.diff
+    "dwm-actualfullscreen.diff"
+    "dwm-restartsig.diff"
+    "dwm-movestack.diff"
+    "dwm-pertag.diff"
+    "dwm-attachbelow.diff"
+    "dwm-cfacts-vanitygaps.diff"
+    "dwm-alwayscenter.diff"
+    "dwm-betterswallow.diff"
+    "dwm-status2d-barpadding-systray.diff"
   ];
-  extraLibs = [ libxcb ];
-}
+in
+(dwm.override {
+  conf = ../dwm/config.def.h;
+  extraLibs = [
+    libxcb
+    libxres
+  ];
+}).overrideAttrs
+  (old: {
+    # official patches carry a few 6.6-drifted hunks; dwm-6.6-fixups.diff
+    # integrates exactly those rejects
+    patchPhase = ''
+      runHook prePatch
+      ${lib.concatStringsSep "\n" (map patch patches)}
+      patch -p1 < ${../dwm/patches/dwm-6.6-fixups.diff}
+      runHook postPatch
+    '';
+  })

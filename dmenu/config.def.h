@@ -2,6 +2,12 @@
 
 static int fuzzy  = 1;                      /* -F  option; if 0, dmenu doesn't use fuzzy matching */
 static int topbar = 1;
+#define OPAQUE 0xffU
+static const unsigned int alpha = 0xee;     /* Amount of opacity. 0xff is opaque             */
+static const unsigned int alphas[SchemeLast][2] = {
+	[SchemeNorm] = { OPAQUE, alpha },
+	[SchemeSel] = { OPAQUE, alpha }
+};
 static int centered = 1;                      /* -c option; centers dmenu on screen */
 static int min_width = 640;                   /* minimum width when centered */
 static const float menu_height_ratio = 4.0f;  /* This is the ratio used in the original calculation */

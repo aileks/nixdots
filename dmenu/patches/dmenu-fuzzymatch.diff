@@ -1,18 +1,33 @@
-diff -ruN -x '*.orig' -x '*.rej' a/config.def.h b/config.def.h
---- a/config.def.h	2026-09-03 18:31:18.311720651 -0400
-+++ b/config.def.h	2026-09-03 18:31:18.322296739 -0400
+From d166c2c90f777f5a80f628d493cdcf7bf03034b8 Mon Sep 17 00:00:00 2001
+From: Justinas Grigas <dev@jstnas.com>
+Date: Mon, 17 Jun 2024 02:52:15 +0100
+Subject: [PATCH] fuzzymatch: Add support for fuzzy-matching
+
+This version of the patch updates the manpage.
+---
+ config.def.h |  1 +
+ config.mk    |  2 +-
+ dmenu.1      |  5 ++-
+ dmenu.c      | 90 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 95 insertions(+), 3 deletions(-)
+
+diff --git a/config.def.h b/config.def.h
+index 1edb647..a4e6174 100644
+--- a/config.def.h
++++ b/config.def.h
 @@ -2,6 +2,7 @@
  /* Default settings; can be overriden by command line. */
  
  static int topbar = 1;                      /* -b  option; if 0, dmenu appears at bottom     */
 +static int fuzzy  = 1;                      /* -F  option; if 0, dmenu doesn't use fuzzy matching */
- static int centered = 1;                    /* -c option; centers dmenu on screen */
- static int min_width = 500;                    /* minimum width when centered */
- static const float menu_height_ratio = 4.0f;  /* This is the ratio used in the original calculation */
-diff -ruN -x '*.orig' -x '*.rej' a/config.mk b/config.mk
---- a/config.mk	2025-08-09 09:00:49.940271203 -0400
-+++ b/config.mk	2026-09-03 18:31:18.313539571 -0400
-@@ -21,7 +21,7 @@
+ /* -fn option overrides fonts[0]; default X11 font or font set */
+ static const char *fonts[] = {
+ 	"monospace:size=10"
+diff --git a/config.mk b/config.mk
+index 137f7c8..6a19175 100644
+--- a/config.mk
++++ b/config.mk
+@@ -21,7 +21,7 @@ FREETYPEINC = /usr/include/freetype2
  
  # includes and libs
  INCS = -I$(X11INC) -I$(FREETYPEINC)
@@ -21,9 +36,10 @@ diff -ruN -x '*.orig' -x '*.rej' a/config.mk b/config.mk
  
  # flags
  CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700 -D_POSIX_C_SOURCE=200809L -DVERSION=\"$(VERSION)\" $(XINERAMAFLAGS)
-diff -ruN -x '*.orig' -x '*.rej' a/dmenu.1 b/dmenu.1
---- a/dmenu.1	2026-09-03 18:31:18.311756288 -0400
-+++ b/dmenu.1	2026-09-03 18:31:18.313582862 -0400
+diff --git a/dmenu.1 b/dmenu.1
+index 323f93c..e2c5ef4 100644
+--- a/dmenu.1
++++ b/dmenu.1
 @@ -3,7 +3,7 @@
  dmenu \- dynamic menu
  .SH SYNOPSIS
@@ -32,10 +48,10 @@ diff -ruN -x '*.orig' -x '*.rej' a/dmenu.1 b/dmenu.1
 +.RB [ \-bFfiv ]
  .RB [ \-l
  .IR lines ]
- .RB [ \-h
-@@ -45,6 +45,9 @@
- .B \-c
- dmenu appears centered on the screen.
+ .RB [ \-m
+@@ -40,6 +40,9 @@ which lists programs in the user's $PATH and runs the result in their $SHELL.
+ .B \-b
+ dmenu appears at the bottom of the screen.
  .TP
 +.B \-F
 +disables fuzzy matching.
@@ -43,9 +59,10 @@ diff -ruN -x '*.orig' -x '*.rej' a/dmenu.1 b/dmenu.1
  .B \-f
  dmenu grabs the keyboard before reading stdin if not reading from a tty. This
  is faster, but will lock up X until stdin reaches end\-of\-file.
-diff -ruN -x '*.orig' -x '*.rej' a/dmenu.c b/dmenu.c
---- a/dmenu.c	2026-09-03 18:31:18.311787167 -0400
-+++ b/dmenu.c	2026-09-03 18:31:18.322363846 -0400
+diff --git a/dmenu.c b/dmenu.c
+index 40f93e0..03e1f45 100644
+--- a/dmenu.c
++++ b/dmenu.c
 @@ -1,6 +1,7 @@
  /* See LICENSE file for copyright and license details. */
  #include <ctype.h>
@@ -54,15 +71,15 @@ diff -ruN -x '*.orig' -x '*.rej' a/dmenu.c b/dmenu.c
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
-@@ -32,6 +33,7 @@
- 	unsigned int width;
+@@ -31,6 +32,7 @@ struct item {
+ 	char *text;
  	struct item *left, *right;
  	int out;
 +	double distance;
  };
  
  static char text[BUFSIZ] = "";
-@@ -236,9 +238,93 @@
+@@ -226,9 +228,93 @@ grabkeyboard(void)
  	die("cannot grab keyboard");
  }
  
@@ -156,16 +173,16 @@ diff -ruN -x '*.orig' -x '*.rej' a/dmenu.c b/dmenu.c
  	static char **tokv = NULL;
  	static int tokn = 0;
  
-@@ -743,7 +829,7 @@
+@@ -715,7 +801,7 @@ setup(void)
  static void
  usage(void)
  {
--	die("usage: dmenu [-bfiv] [-l lines] [-h height] [-p prompt] [-fn font] [-m monitor]\n"
-+	die("usage: dmenu [-bFfiv] [-l lines] [-h height] [-p prompt] [-fn font] [-m monitor]\n"
+-	die("usage: dmenu [-bfiv] [-l lines] [-p prompt] [-fn font] [-m monitor]\n"
++	die("usage: dmenu [-bFfiv] [-l lines] [-p prompt] [-fn font] [-m monitor]\n"
  	    "             [-nb color] [-nf color] [-sb color] [-sf color] [-w windowid]");
  }
  
-@@ -760,6 +846,8 @@
+@@ -732,6 +818,8 @@ main(int argc, char *argv[])
  			exit(0);
  		} else if (!strcmp(argv[i], "-b")) /* appears at the bottom of the screen */
  			topbar = 0;
@@ -173,4 +190,7 @@ diff -ruN -x '*.orig' -x '*.rej' a/dmenu.c b/dmenu.c
 +			fuzzy = 0;
  		else if (!strcmp(argv[i], "-f"))   /* grabs keyboard before reading stdin */
  			fast = 1;
- 		else if (!strcmp(argv[i], "-c"))   /* centers dmenu on screen */
+ 		else if (!strcmp(argv[i], "-i")) { /* case-insensitive item matching */
+-- 
+2.45.2
+

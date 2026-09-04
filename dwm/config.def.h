@@ -12,7 +12,7 @@ static const unsigned int gappov =
 static int smartgaps =
     0; /* 1 means no outer gap when there is only one window */
 static const unsigned int systraypinning =
-    0; /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor
+    1; /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor
           X */
 static const unsigned int systrayonleft =
     0; /* 0: systray in the right corner, >0: systray on left of status text */
@@ -44,7 +44,7 @@ static const char col_green[] = "#879B5C";
 
 static const char *colors[][3] = {
     /*               fg         bg         border   */
-    [SchemeNorm] = {col_fg, col_bg, col_border},
+    [SchemeNorm] = {col_fg, col_bg, col_gray},
     [SchemeSel] = {col_bg, col_accent, col_border},
 };
 
@@ -103,7 +103,6 @@ static const Layout layouts[] = {
         .v = (const char *[]) { "/bin/sh", "-c", cmd, NULL }                   \
     }
 
-#define STATUSBAR "dwmblocks"
 
 /* commands */
 static char dmenumon[2] =
@@ -218,9 +217,6 @@ static Button buttons[] = {
     {ClkLtSymbol, 0, Button1, setlayout, {0}},
     {ClkLtSymbol, 0, Button3, setlayout, {.v = &layouts[2]}},
     {ClkWinTitle, 0, Button2, zoom, {0}},
-    {ClkStatusText, 0, Button1, sigstatusbar, {.i = 1}},
-    {ClkStatusText, 0, Button2, sigstatusbar, {.i = 2}},
-    {ClkStatusText, 0, Button3, sigstatusbar, {.i = 3}},
     {ClkClientWin, MODKEY, Button1, movemouse, {0}},
     {ClkClientWin, MODKEY, Button2, togglefloating, {0}},
     {ClkClientWin, MODKEY, Button3, resizemouse, {0}},

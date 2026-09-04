@@ -1,0 +1,69 @@
+--- a/dwm.c
++++ b/dwm.c
+@@ -314,11 +314,12 @@
+ 	[MapRequest] = maprequest,
+ 	[MotionNotify] = motionnotify,
+ 	[PropertyNotify] = propertynotify,
++	[ResizeRequest] = resizerequest,
+ 	[UnmapNotify] = unmapnotify
+ };
+ static Atom swallow_atom;
+ static SwallowDef *swallowlist;
+-static Atom wmatom[WMLast], netatom[NetLast];
++static Atom wmatom[WMLast], netatom[NetLast], xatom[XLast];
+ static int restart = 0;
+ static int running = 1;
+ static Cur *cursor[CurLast];
+@@ -1453,11 +1454,13 @@
+ 		c->isfloating = c->oldstate = trans != None || c->isfixed;
+ 	if (c->isfloating)
+ 		XRaiseWindow(dpy, c->win);
+-	if( attachbelow )
+-		attachBelow(c);
+-	else
+-		attach(c);
+-	attachstack(c);
++	if(!c->swallower) {
++		if( attachbelow )
++			attachBelow(c);
++		else
++			attach(c);
++		attachstack(c);
++	}
+ 	XChangeProperty(dpy, root, netatom[NetClientList], XA_WINDOW, 32, PropModeAppend,
+ 		(unsigned char *) &(c->win), 1);
+ 	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
+@@ -2054,6 +2057,10 @@
+ 	wmatom[WMTakeFocus] = XInternAtom(dpy, "WM_TAKE_FOCUS", False);
+ 	netatom[NetActiveWindow] = XInternAtom(dpy, "_NET_ACTIVE_WINDOW", False);
+ 	netatom[NetSupported] = XInternAtom(dpy, "_NET_SUPPORTED", False);
++	netatom[NetSystemTray] = XInternAtom(dpy, "_NET_SYSTEM_TRAY_S0", False);
++	netatom[NetSystemTrayOP] = XInternAtom(dpy, "_NET_SYSTEM_TRAY_OPCODE", False);
++	netatom[NetSystemTrayOrientation] = XInternAtom(dpy, "_NET_SYSTEM_TRAY_ORIENTATION", False);
++	netatom[NetSystemTrayOrientationHorz] = XInternAtom(dpy, "_NET_SYSTEM_TRAY_ORIENTATION_HORZ", False);
+ 	netatom[NetWMName] = XInternAtom(dpy, "_NET_WM_NAME", False);
+ 	netatom[NetWMState] = XInternAtom(dpy, "_NET_WM_STATE", False);
+ 	netatom[NetWMCheck] = XInternAtom(dpy, "_NET_SUPPORTING_WM_CHECK", False);
+@@ -2061,15 +2068,21 @@
+ 	netatom[NetWMWindowType] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE", False);
+ 	netatom[NetWMWindowTypeDialog] = XInternAtom(dpy, "_NET_WM_WINDOW_TYPE_DIALOG", False);
+ 	netatom[NetClientList] = XInternAtom(dpy, "_NET_CLIENT_LIST", False);
++	xatom[Manager] = XInternAtom(dpy, "MANAGER", False);
++	xatom[Xembed] = XInternAtom(dpy, "_XEMBED", False);
++	xatom[XembedInfo] = XInternAtom(dpy, "_XEMBED_INFO", False);
+ 	swallow_atom = XInternAtom(dpy, "_BETTER_SWALLOW", False);
+ 	/* init cursors */
+ 	cursor[CurNormal] = drw_cur_create(drw, XC_left_ptr);
+ 	cursor[CurResize] = drw_cur_create(drw, XC_sizing);
+ 	cursor[CurMove] = drw_cur_create(drw, XC_fleur);
+ 	/* init appearance */
+-	scheme = ecalloc(LENGTH(colors), sizeof(Clr *));
++	scheme = ecalloc(LENGTH(colors) + 1, sizeof(Clr *));
++	scheme[LENGTH(colors)] = drw_scm_create(drw, colors[0], 3);
+ 	for (i = 0; i < LENGTH(colors); i++)
+ 		scheme[i] = drw_scm_create(drw, colors[i], 3);
++	/* init system tray */
++	updatesystray();
+ 	/* init bars */
+ 	updatebars();
+ 	updatestatus();

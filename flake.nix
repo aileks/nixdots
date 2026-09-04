@@ -41,12 +41,15 @@
       overlay = final: prev: {
         dwm = import ./packages/dwm.nix {
           dwm = prev.dwm;
-          libxcb = prev.libxcb;
+          inherit (prev) lib libxcb libxres;
         };
-        dmenu = import ./packages/dmenu.nix { dmenu = prev.dmenu; };
+        dmenu = import ./packages/dmenu.nix {
+          dmenu = prev.dmenu;
+          lib = prev.lib;
+        };
         st = import ./packages/st.nix {
           st = prev.st;
-          harfbuzz = prev.harfbuzz;
+          inherit (prev) lib harfbuzz;
         };
         dwmblocks = final.callPackage ./packages/dwmblocks.nix { };
         cinder-grove-gtk = final.callPackage ./packages/cinder-grove-gtk.nix { };
