@@ -60,10 +60,8 @@ static const Rule rules[] = {
        isfullscreen  isterminal  noswallow  monitor */
     {"st-256color", NULL, NULL, 0, 0, 0, 1, 0, -1},
     {"xdg-desktop-portal-gtk", NULL, NULL, 0, 1, 0, 0, 0, -1},
-    {"org.gnome.DiskUtility", NULL, NULL, 0, 1, 0, 0, 0, -1},
     {"qalculate-gtk", NULL, NULL, 0, 1, 0, 0, 0, -1},
     {"polkit-gnome", NULL, NULL, 0, 1, 0, 0, 0, -1},
-    {"pavucontrol", NULL, NULL, 0, 1, 0, 0, 0, -1},
     {"nm-connection-editor", NULL, NULL, 0, 1, 0, 0, 0, -1},
 };
 
