@@ -52,20 +52,20 @@ audio=${2:-none}
 case "$mode" in
   region | output | stop | status) ;;
   *)
-    printf 'usage: screenrecord [region|output] [none|mic|desktop|desktop+mic] | stop | status\n' >&2
+    printf 'usage: screenrecord [region|output] [none|mic|desktop+mic] | stop | status\n' >&2
     exit 2
     ;;
 esac
 if [[ $mode == region || $mode == output ]]; then
   case "$audio" in
-    none | mic | desktop | desktop+mic) ;;
+    none | mic | desktop+mic) ;;
     *)
-      printf 'usage: screenrecord [region|output] [none|mic|desktop|desktop+mic] | stop | status\n' >&2
+      printf 'usage: screenrecord [region|output] [none|mic|desktop+mic] | stop | status\n' >&2
       exit 2
       ;;
   esac
 elif (($# > 1)); then
-  printf 'usage: screenrecord [region|output] [none|mic|desktop|desktop+mic] | stop | status\n' >&2
+  printf 'usage: screenrecord [region|output] [none|mic|desktop+mic] | stop | status\n' >&2
   exit 2
 fi
 
@@ -132,7 +132,6 @@ esac
 case "$audio" in
   none) audio_args=() ;;
   mic) audio_args=(-a default_input) ;;
-  desktop) audio_args=(-a default_output) ;;
   desktop+mic) audio_args=(-a 'default_output|default_input') ;;
   *) exit 2 ;;
 esac
