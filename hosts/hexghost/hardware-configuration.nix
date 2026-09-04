@@ -16,7 +16,6 @@
 
   boot.initrd.availableKernelModules = [
     "nvme"
-    "xhci_pci_prom21"
     "ahci"
     "xhci_pci"
     "uas"

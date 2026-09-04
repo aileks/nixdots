@@ -31,7 +31,6 @@
   ];
   nixpkgs.config.allowUnfree = true;
 
-  boot.kernelPackages = pkgs.linuxPackages_latest;
   hardware.graphics.enable = true;
   system.stateVersion = "26.05";
 
