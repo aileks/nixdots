@@ -51,7 +51,7 @@
           st = prev.st;
           inherit (prev) lib harfbuzz;
         };
-        dwmblocks = final.callPackage ./packages/dwmblocks.nix { };
+        dwmblocks = final.callPackage ./packages/dwmblocks-async.nix { };
         cinder-grove-gtk = final.callPackage ./packages/cinder-grove-gtk.nix { };
         papirus-cinder-grove = final.callPackage ./packages/papirus-cinder-grove.nix { };
         fastmail-desktop = final.callPackage ./packages/fastmail-desktop.nix { };

@@ -197,7 +197,6 @@ in
         zoxide
         st
         dmenu
-        dwmblocks
         starship
         tmux
         neovim
