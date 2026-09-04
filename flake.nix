@@ -41,7 +41,7 @@
       overlay = final: prev: {
         dwm = import ./packages/dwm.nix {
           dwm = prev.dwm;
-          inherit (prev) lib libxcb libxres;
+          inherit (prev) lib libxcb;
         };
         dmenu = import ./packages/dmenu.nix {
           dmenu = prev.dmenu;
