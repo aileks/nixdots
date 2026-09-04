@@ -230,6 +230,7 @@ in
         fastfetch
         qalculate-gtk
         file-roller
+        gh
         gnome-disk-utility
         imv
         papers
