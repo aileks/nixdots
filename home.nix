@@ -279,6 +279,7 @@ in
         xdotool
         xsecurelock
         xss-lock
+        bubblewrap
       ])
       ++ [ zenTwilight ];
 
