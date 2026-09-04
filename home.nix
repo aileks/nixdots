@@ -197,6 +197,7 @@ in
         clang-tools
         bat
         eza
+        psmisc
         fd
         fzf
         git
