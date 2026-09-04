@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+sink=@DEFAULT_AUDIO_SINK@
+case ${1:-} in
+  up) wpctl set-volume -l 1.0 "$sink" 5%+ ;;
+  down) wpctl set-volume -l 1.0 "$sink" 5%- ;;
+  mute) wpctl set-mute "$sink" toggle ;;
+  *)
+    printf 'usage: volume <up|down|mute>\n' >&2
+    exit 2
+    ;;
+esac
+
+state=$(wpctl get-volume "$sink")
+vol=${state#Volume: }
+value=$(awk -v v="$vol" 'BEGIN { printf "%.0f", v * 100 }')
+if [[ $vol == *'[MUTED]'* ]]; then
+  osd volume "$value" alternate
+else
+  osd volume "$value"
+fi
+
+pkill -RTMIN+10 dwmblocks 2>/dev/null || true

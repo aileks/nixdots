@@ -115,33 +115,22 @@ static const char *mailcmd[] = {"fastmail", NULL};
 static const char *lockcmd[] = {"loginctl", "lock-session", NULL};
 static const char *emoticmd[] = {"bemoji", "-n", NULL};
 static const char *clipcmd[] = {"clipmenu", "-p", "clip", NULL};
-static const char *dndcmd[] = {"dunstctl", "set-paused", "toggle", NULL};
 static const char *nightcmd[] = {"night-light", NULL};
 static const char *pickercmd[] = {
     "sh", "-c", "xcolor -P '#%02x%02x%02x' | xclip -selection clipboard", NULL};
 static const char *powercmd[] = {"power-menu", NULL};
 static const char *recordmenucmd[] = {"record-menu", NULL};
 
-static const char *volupcmd[] = {"sh", "-c",
-                                 "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ "
-                                 "5%+; pkill -RTMIN+10 dwmblocks",
-                                 NULL};
-static const char *voldowncmd[] = {
-    "sh", "-c",
-    "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%-; pkill -RTMIN+10 "
-    "dwmblocks",
-    NULL};
-static const char *volmutecmd[] = {
-    "sh", "-c",
-    "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle; pkill -RTMIN+10 dwmblocks",
-    NULL};
+static const char *volupcmd[] = {"volume", "up", NULL};
+static const char *voldowncmd[] = {"volume", "down", NULL};
+static const char *volmutecmd[] = {"volume", "mute", NULL};
 static const char *micmutecmd[] = {
     "sh", "-c",
     "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle; pkill -RTMIN+10 dwmblocks",
     NULL};
-static const char *brightupcmd[] = {"sh", "-c", "ddcutil setvcp 10 + 10", NULL};
-static const char *brightdowncmd[] = {"sh", "-c", "ddcutil setvcp 10 - 10",
-                                      NULL};
+static const char *brightupcmd[] = {"brightness", "up", NULL};
+static const char *brightdowncmd[] = {"brightness", "down", NULL};
+static const char *dndcmd[] = {"dnd-toggle", NULL};
 
 #include <X11/XF86keysym.h>
 static Key keys[] = {

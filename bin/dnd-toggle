@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+dunstctl set-paused toggle
+
+# dunst is paused now, so a notification would be hidden; use the OSD instead
+if [[ $(dunstctl get-paused) == true ]]; then
+  osd dnd 100
+fi

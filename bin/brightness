@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+case ${1:-} in
+  up) ddcutil setvcp 10 + 10 ;;
+  down) ddcutil setvcp 10 - 10 ;;
+  *)
+    printf 'usage: brightness <up|down>\n' >&2
+    exit 2
+    ;;
+esac
+
+reading=$(ddcutil getvcp 10 --brief)
+value=$(awk '{ printf "%.0f", $4 / $5 * 100 }' <<<"$reading")
+osd brightness "$value"

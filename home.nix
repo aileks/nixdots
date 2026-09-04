@@ -22,6 +22,7 @@ let
     "qt6ct" = "qt6ct";
     "sxhkd" = "sxhkd";
     "tmux" = "tmux";
+    "xob/styles.cfg" = "xob/styles.cfg";
     "starship.toml" = "starship/starship.toml";
   };
   cinderGroveGtk = pkgs.cinder-grove-gtk;
@@ -87,6 +88,46 @@ let
         touch /tmp/night-light-on
       fi
     '';
+  };
+  osd = pkgs.writeShellApplication {
+    name = "osd";
+    runtimeInputs = with pkgs; [ coreutils ];
+    text = builtins.readFile ./bin/osd;
+  };
+  osdDaemons = pkgs.writeShellApplication {
+    name = "osd-daemons";
+    runtimeInputs = with pkgs; [
+      coreutils
+      xob
+    ];
+    text = builtins.readFile ./bin/osd-daemons;
+  };
+  volume = pkgs.writeShellApplication {
+    name = "volume";
+    runtimeInputs = with pkgs; [
+      gawk
+      osd
+      procps
+      wireplumber
+    ];
+    text = builtins.readFile ./bin/volume;
+  };
+  brightness = pkgs.writeShellApplication {
+    name = "brightness";
+    runtimeInputs = with pkgs; [
+      ddcutil
+      gawk
+      osd
+    ];
+    text = builtins.readFile ./bin/brightness;
+  };
+  dndToggle = pkgs.writeShellApplication {
+    name = "dnd-toggle";
+    runtimeInputs = with pkgs; [
+      dunst
+      osd
+    ];
+    text = builtins.readFile ./bin/dnd-toggle;
   };
   screenrecord = pkgs.writeShellApplication {
     name = "screenrecord";
@@ -191,6 +232,7 @@ in
         xclip
         maim
         slop
+        xob
         playerctl
         libnotify
         inotify-tools
@@ -242,6 +284,11 @@ in
       ".local/bin/screenrecord".source = lib.getExe screenrecord;
       ".local/bin/desktop-screenshot".source = lib.getExe desktopScreenshot;
       ".local/bin/record-menu".source = lib.getExe recordMenu;
+      ".local/bin/osd".source = lib.getExe osd;
+      ".local/bin/osd-daemons".source = lib.getExe osdDaemons;
+      ".local/bin/volume".source = lib.getExe volume;
+      ".local/bin/brightness".source = lib.getExe brightness;
+      ".local/bin/dnd-toggle".source = lib.getExe dndToggle;
       ".zshrc".source = createSymlink "zsh/zshrc";
       ".antidote/antidote.zsh".source = "${pkgs.antidote}/share/antidote/antidote.zsh";
     };
@@ -257,6 +304,11 @@ in
   };
 
   xsession.enable = true;
+  xsession.initExtra = ''
+    pkill -x xss-lock 2>/dev/null || true
+    ${pkgs.xss-lock}/bin/xss-lock -l ${pkgs.xsecurelock}/bin/xsecurelock &
+    ${lib.getExe osdDaemons} >/dev/null 2>&1 &
+  '';
 
   xresources.properties."Xft.dpi" = 96;
 
@@ -423,21 +475,6 @@ in
       Service = {
         ExecStart = "${pkgs.sxhkd}/bin/sxhkd";
         Environment = [ "PATH=${xsessionPath}" ];
-        Restart = "on-failure";
-        RestartSec = 2;
-      };
-      Install.WantedBy = [ graphicalSessionTarget ];
-    };
-
-    xss-lock = {
-      Unit = {
-        Description = "X screen lock on idle and session lock";
-        ConditionEnvironment = "DISPLAY";
-        PartOf = [ graphicalSessionTarget ];
-        After = [ graphicalSessionTarget ];
-      };
-      Service = {
-        ExecStart = "${pkgs.xss-lock}/bin/xss-lock -l ${pkgs.xsecurelock}/bin/xsecurelock";
         Restart = "on-failure";
         RestartSec = 2;
       };

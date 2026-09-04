@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+config="$HOME/.config/xob/styles.cfg"
+
+for channel in volume brightness dnd; do
+  pipe="$runtime_dir/osd-$channel.pipe"
+  if [[ ! -p $pipe ]]; then
+    rm -f "$pipe"
+    mkfifo "$pipe"
+  fi
+done
+
+# xob holds a read-write fd on its pipe so it never sees EOF when osd exits
+exec 3<>"$runtime_dir/osd-volume.pipe"
+xob -q -c "$config" -s volume -m 100 -t 1800 <&3 &
+exec 3<>"$runtime_dir/osd-brightness.pipe"
+xob -q -c "$config" -s brightness -m 100 -t 1800 <&3 &
+exec 3<>"$runtime_dir/osd-dnd.pipe"
+xob -q -c "$config" -s dnd -m 100 -t 1800 <&3 &
