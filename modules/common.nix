@@ -69,6 +69,7 @@
 
   services = {
     displayManager.ly.enable = true;
+    blueman.enable = true;
     openssh.enable = true;
     printing.enable = true;
     tumbler.enable = true;
