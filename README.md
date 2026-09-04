@@ -18,18 +18,18 @@ sudo ./bin/install --hostname your-hostname
 
 ### Apps and tools
 
-| Keys              | Action                                 |
-| ----------------- | -------------------------------------- |
-| `Mod + Space`     | dmenu                                  |
-| `Mod + Return`    | terminal (st)                          |
-| `Mod + W`         | browser (Zen)                          |
-| `Mod + E`         | file manager (Thunar)                  |
-| `Mod + S`         | Signal                                 |
-| `Mod + M`         | Fastmail                               |
-| `Mod + V`         | clipboard history (clipmenu)           |
-| `Mod + ;`         | emoji picker (bemoji)                  |
-| `Mod + O`         | pick a screen color into the clipboard |
-| `Mod + Shift + P` | power menu                             |
+| Keys              | Action                       |
+| ----------------- | ---------------------------- |
+| `Mod + Space`     | dmenu                        |
+| `Mod + Return`    | terminal (st)                |
+| `Mod + W`         | browser (Zen)                |
+| `Mod + E`         | file manager (Thunar)        |
+| `Mod + S`         | Signal                       |
+| `Mod + M`         | Fastmail                     |
+| `Mod + V`         | clipboard history (clipmenu) |
+| `Mod + ;`         | emoji picker (bemoji)        |
+| `Mod + O`         | color picker                 |
+| `Mod + Shift + P` | power menu                   |
 
 ### Capture
 
@@ -41,8 +41,6 @@ sudo ./bin/install --hostname your-hostname
 | `Mod + Print`         | record screen region (press again to stop)                |
 | `Mod + Shift + Print` | record the monitor under the cursor (press again to stop) |
 | `Mod + R`             | recording menu (region or screen, audio choice)           |
-
-Screenshots land in `~/Pictures/Screenshots`, recordings in `~/Videos/Recordings`.
 
 ### Session
 
