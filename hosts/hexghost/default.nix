@@ -43,7 +43,6 @@ in
 
   hardware.i2c.enable = true;
 
-  # Keep the receiver from waking the machine during suspend testing.
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{idProduct}=="c548", TEST=="power/wakeup", ATTR{power/wakeup}="disabled"
   '';
@@ -55,7 +54,6 @@ in
     nvidiaSettings = true;
     powerManagement = {
       enable = true;
-      # Use NVIDIA's services, including their Xorg VT switch and restore.
       kernelSuspendNotifier = false;
     };
   };
