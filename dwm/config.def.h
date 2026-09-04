@@ -103,7 +103,6 @@ static const Layout layouts[] = {
         .v = (const char *[]) { "/bin/sh", "-c", cmd, NULL }                   \
     }
 
-
 /* commands */
 static char dmenumon[2] =
     "0"; /* component of dmenucmd, manipulated in spawn() */
@@ -163,7 +162,7 @@ static Key keys[] = {
     {0, XK_Print, spawn, {.v = shotcmd}},
     {MODKEY, XK_Print, spawn,
      SHCMD("gpu-screen-recorder -w screen -f 60 -a default_output -o "
-           "\"$HOME/Videos/rec-$(date +%Y%m%d-%H%M%S).mkv\"")},
+           "\"$HOME/Videos/Recordings/rec-$(date +%Y%m%d-%H%M%S).mp4\"")},
     {MODKEY | ShiftMask, XK_Print, spawn,
      SHCMD("pkill --signal SIGINT gpu-screen-recorder")},
     {MODKEY, XK_q, killclient, {0}},
