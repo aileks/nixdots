@@ -15,9 +15,10 @@ case "$choice" in
   *) exit 0 ;;
 esac
 
-audio=$(printf '%s\n' 'No Audio' 'Desktop Audio' 'Desktop + Microphone' | dmenu -p audio) || exit 0
+audio=$(printf '%s\n' 'No Audio' 'Microphone' 'Desktop Audio' 'Desktop + Microphone' | dmenu -p audio) || exit 0
 case "$audio" in
   'No Audio') audio=none ;;
+  'Microphone') audio=mic ;;
   'Desktop Audio') audio=desktop ;;
   'Desktop + Microphone') audio=desktop+mic ;;
   *) exit 0 ;;

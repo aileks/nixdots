@@ -358,6 +358,7 @@ in
           "window_type = 'dropdown_menu'"
           "window_type = 'popup_menu'"
           "_GTK_FRAME_EXTENTS@:c"
+          "class_g = 'slop'"
         ];
       };
     };
