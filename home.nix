@@ -237,7 +237,8 @@ in
         bitwarden-desktop
         signal-desktop
         fastmail-desktop
-        onlyoffice-desktopeditors
+        libreoffice-fresh
+        chromium
         polkit_gnome
         gammastep
         xcolor
