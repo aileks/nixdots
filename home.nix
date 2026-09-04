@@ -88,6 +88,38 @@ let
       fi
     '';
   };
+  screenrecord = pkgs.writeShellApplication {
+    name = "screenrecord";
+    runtimeInputs = with pkgs; [
+      coreutils
+      gawk
+      gpu-screen-recorder
+      libnotify
+      slop
+      xdg-utils
+      xdotool
+      xrandr
+    ];
+    text = builtins.readFile ./bin/screenrecord;
+  };
+  desktopScreenshot = pkgs.writeShellApplication {
+    name = "desktop-screenshot";
+    runtimeInputs = with pkgs; [
+      coreutils
+      libnotify
+      maim
+      slop
+      xclip
+      xdg-utils
+      xdotool
+    ];
+    text = builtins.readFile ./bin/desktop-screenshot;
+  };
+  recordMenu = pkgs.writeShellApplication {
+    name = "record-menu";
+    runtimeInputs = with pkgs; [ dmenu ];
+    text = builtins.readFile ./bin/record-menu;
+  };
   xsessionPath = lib.concatStringsSep ":" [
     "${config.home.profileDirectory}/bin"
     "/run/current-system/sw/bin"
@@ -157,6 +189,8 @@ in
         clipmenu
         bemoji
         xclip
+        maim
+        slop
         playerctl
         libnotify
         inotify-tools
@@ -180,7 +214,6 @@ in
         tmux-sessionizer
         dunst
         feh
-        flameshot
         numlockx
         sxhkd
         wireplumber
@@ -206,6 +239,9 @@ in
       ".local/bin/bar-clock".source = lib.getExe barClock;
       ".local/bin/power-menu".source = lib.getExe powerMenu;
       ".local/bin/night-light".source = lib.getExe nightLight;
+      ".local/bin/screenrecord".source = lib.getExe screenrecord;
+      ".local/bin/desktop-screenshot".source = lib.getExe desktopScreenshot;
+      ".local/bin/record-menu".source = lib.getExe recordMenu;
       ".zshrc".source = createSymlink "zsh/zshrc";
       ".antidote/antidote.zsh".source = "${pkgs.antidote}/share/antidote/antidote.zsh";
     };

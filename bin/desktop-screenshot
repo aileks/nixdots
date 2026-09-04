@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+mode=${1:-}
+case "$mode" in
+  region | window | full) ;;
+  *)
+    printf 'usage: desktop-screenshot <region|window|full>\n' >&2
+    exit 2
+    ;;
+esac
+
+pictures_directory=$(xdg-user-dir PICTURES 2>/dev/null || true)
+directory="${pictures_directory:-${XDG_PICTURES_DIR:-$HOME/Pictures}}/Screenshots"
+mkdir -p "$directory"
+file="$directory/$(date +%Y-%m-%d_%H-%M-%S).png"
+
+case "$mode" in
+  region) maim -s "$file" ;;
+  window) maim -i "$(xdotool getactivewindow)" "$file" ;;
+  full) maim "$file" ;;
+esac
+
+xclip -selection clipboard -t image/png -i "$file"
+notify-send -a Screenshot -i "$file" 'Screenshot saved and copied' "$file"

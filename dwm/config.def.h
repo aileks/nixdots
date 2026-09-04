@@ -113,7 +113,6 @@ static const char *filescmd[] = {"thunar", NULL};
 static const char *signalcmd[] = {"signal-desktop", NULL};
 static const char *mailcmd[] = {"fastmail", NULL};
 static const char *lockcmd[] = {"loginctl", "lock-session", NULL};
-static const char *shotcmd[] = {"flameshot", "gui", NULL};
 static const char *emoticmd[] = {"bemoji", "-n", NULL};
 static const char *clipcmd[] = {"clipmenu", "-p", "clip", NULL};
 static const char *dndcmd[] = {"dunstctl", "set-paused", "toggle", NULL};
@@ -121,6 +120,7 @@ static const char *nightcmd[] = {"night-light", NULL};
 static const char *pickercmd[] = {
     "sh", "-c", "xcolor -P '#%02x%02x%02x' | xclip -selection clipboard", NULL};
 static const char *powercmd[] = {"power-menu", NULL};
+static const char *recordmenucmd[] = {"record-menu", NULL};
 
 static const char *volupcmd[] = {"sh", "-c",
                                  "wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ "
@@ -159,12 +159,12 @@ static Key keys[] = {
     {MODKEY | ShiftMask, XK_p, spawn, {.v = powercmd}},
     {MODKEY | ControlMask, XK_n, spawn, {.v = nightcmd}},
     {MODKEY, XK_Escape, spawn, {.v = lockcmd}},
-    {0, XK_Print, spawn, {.v = shotcmd}},
-    {MODKEY, XK_Print, spawn,
-     SHCMD("gpu-screen-recorder -w screen -f 60 -a default_output -o "
-           "\"$HOME/Videos/Recordings/rec-$(date +%Y%m%d-%H%M%S).mp4\"")},
-    {MODKEY | ShiftMask, XK_Print, spawn,
-     SHCMD("pkill --signal SIGINT gpu-screen-recorder")},
+    {0, XK_Print, spawn, SHCMD("desktop-screenshot region")},
+    {ControlMask, XK_Print, spawn, SHCMD("desktop-screenshot window")},
+    {ShiftMask, XK_Print, spawn, SHCMD("desktop-screenshot full")},
+    {MODKEY, XK_Print, spawn, SHCMD("screenrecord region")},
+    {MODKEY | ShiftMask, XK_Print, spawn, SHCMD("screenrecord output")},
+    {MODKEY, XK_r, spawn, {.v = recordmenucmd}},
     {MODKEY, XK_q, killclient, {0}},
     {MODKEY, XK_f, togglefullscr, {0}},
     {MODKEY, XK_b, togglebar, {0}},

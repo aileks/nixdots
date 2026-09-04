@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+videos_directory=$(xdg-user-dir VIDEOS 2>/dev/null || true)
+directory="${videos_directory:-${XDG_VIDEOS_DIR:-$HOME/Videos}}/Recordings"
+statefile="${XDG_RUNTIME_DIR:-/run/user/$UID}/screenrecord.state"
+
+recording_is_live() {
+  local current_start_time executable
+  [[ ${pid:-} =~ ^[0-9]+$ && ${start_time:-} =~ ^[0-9]+$ ]] || return 1
+  kill -0 "$pid" 2>/dev/null || return 1
+  current_start_time=$(awk '{ print $22 }' "/proc/$pid/stat" 2>/dev/null) || return 1
+  [[ $current_start_time == "$start_time" ]] || return 1
+  executable=$(readlink -f "/proc/$pid/exe" 2>/dev/null) || return 1
+  [[ ${executable##*/} == gpu-screen-recorder ]]
+}
+
+read_state() {
+  [[ -f $statefile ]] || return 1
+  {
+    read -r pid
+    read -r start_time
+    read -r file
+  } <"$statefile"
+}
+
+stop_recording() {
+  # gpu-screen-recorder finalizes the mp4 on SIGINT
+  kill -INT "$pid"
+  for _ in {1..50}; do
+    kill -0 "$pid" 2>/dev/null || break
+    sleep 0.1
+  done
+  if kill -0 "$pid" 2>/dev/null; then
+    notify-send -u critical -a Recording "Recording did not stop" \
+      "The recorder is still finalizing. Try again before starting another recording."
+    exit 1
+  fi
+  rm -f "$statefile"
+  if [[ -s $file ]]; then
+    notify-send -a Recording "Recording saved" "$file"
+  else
+    notify-send -u critical -a Recording "Recording failed" \
+      "No completed recording was written."
+    exit 1
+  fi
+}
+
+mode=${1:-output}
+audio=${2:-none}
+case "$mode" in
+  region | output | stop | status) ;;
+  *)
+    printf 'usage: screenrecord [region|output] [none|desktop|desktop+mic] | stop | status\n' >&2
+    exit 2
+    ;;
+esac
+if [[ $mode == region || $mode == output ]]; then
+  case "$audio" in
+    none | desktop | desktop+mic) ;;
+    *)
+      printf 'usage: screenrecord [region|output] [none|desktop|desktop+mic] | stop | status\n' >&2
+      exit 2
+      ;;
+  esac
+elif (($# > 1)); then
+  printf 'usage: screenrecord [region|output] [none|desktop|desktop+mic] | stop | status\n' >&2
+  exit 2
+fi
+
+if read_state && recording_is_live; then
+  if [[ $mode == status ]]; then
+    printf '%s\n' "$file"
+    exit 0
+  fi
+  stop_recording
+  exit 0
+fi
+
+if [[ $mode == status ]]; then
+  printf 'not recording\n'
+  exit 1
+fi
+
+if [[ $mode == stop ]]; then
+  rm -f "$statefile"
+  notify-send -a Recording "No active recording"
+  exit 0
+fi
+
+rm -f "$statefile"
+mkdir -p "$directory"
+file="$directory/$(date +%Y-%m-%d_%H-%M-%S).mp4"
+
+case "$mode" in
+  output)
+    # X11 has no per-monitor capture target, so record the monitor under the
+    # cursor as a region
+    read -r mouse_x mouse_y <<<"$(xdotool getmouselocation --shell \
+      | awk -F= '/^(X|Y)=/ { v[$1] = $2 } END { print v["X"], v["Y"] }')"
+    monitor=$(xrandr --query | awk -v mx="$mouse_x" -v my="$mouse_y" '
+      / connected / {
+        for (i = 1; i <= NF; i++) {
+          if ($i ~ /^[0-9]+x[0-9]+\+[0-9]+\+[0-9]+$/) {
+            split($i, wh, "x")
+            split(wh[2], geo, "+")
+            if (mx >= geo[2] && mx < geo[2] + wh[1] && \
+                my >= geo[3] && my < geo[3] + geo[1]) {
+              print $i
+              exit
+            }
+          }
+        }
+      }')
+    if [[ -z $monitor ]]; then
+      notify-send -u critical -a Recording "Recording failed" \
+        "Could not determine the monitor under the cursor."
+      exit 1
+    fi
+    args=(-w region -region "$monitor")
+    ;;
+  region)
+    geometry=$(slop -f '%wx%h+%x+%y') || exit 0
+    args=(-w region -region "$geometry")
+    ;;
+  *)
+    exit 2
+    ;;
+esac
+
+case "$audio" in
+  none) audio_args=() ;;
+  desktop) audio_args=(-a default_output) ;;
+  desktop+mic) audio_args=(-a 'default_output|default_input') ;;
+  *) exit 2 ;;
+esac
+
+gpu-screen-recorder "${args[@]}" -f 60 "${audio_args[@]}" -c mp4 -o "$file" &
+pid=$!
+sleep 0.2
+if ! kill -0 "$pid" 2>/dev/null; then
+  wait "$pid" || status=$?
+  notify-send -u critical -a Recording "Recording failed to start" \
+    "gpu-screen-recorder exited with status ${status:-0}."
+  exit 1
+fi
+if ! start_time=$(awk '{ print $22 }' "/proc/$pid/stat" 2>/dev/null); then
+  wait "$pid" || status=$?
+  notify-send -u critical -a Recording "Recording failed to start" \
+    "gpu-screen-recorder exited with status ${status:-0}."
+  exit 1
+fi
+statefile_tmp="$statefile.tmp.$pid"
+printf '%s\n%s\n%s\n' "$pid" "$start_time" "$file" >"$statefile_tmp"
+mv "$statefile_tmp" "$statefile"
+
+notify-send -a Recording "Recording started" "$file"

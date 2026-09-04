@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+if screenrecord status >/dev/null 2>&1; then
+  choice=$(printf '%s\n' 'Stop Recording' | dmenu -p record) || exit 0
+  [[ $choice == 'Stop Recording' ]] && exec screenrecord stop
+  exit 0
+fi
+
+choice=$(printf '%s\n' 'Record Region' 'Record Screen' | dmenu -p record) || exit 0
+case "$choice" in
+  'Record Region') mode=region ;;
+  'Record Screen') mode=output ;;
+  *) exit 0 ;;
+esac
+
+audio=$(printf '%s\n' 'No Audio' 'Desktop Audio' 'Desktop + Microphone' | dmenu -p audio) || exit 0
+case "$audio" in
+  'No Audio') audio=none ;;
+  'Desktop Audio') audio=desktop ;;
+  'Desktop + Microphone') audio=desktop+mic ;;
+  *) exit 0 ;;
+esac
+
+exec screenrecord "$mode" "$audio"
