@@ -97,7 +97,7 @@ let
           exit 1
         fi
       else
-        if gammastep -O 3500; then
+        if gammastep -O 4800; then
           touch /tmp/night-light-on
           desktop-feedback status "Night light on" || true
         else
@@ -273,7 +273,6 @@ in
         wiremix
         wireplumber
         xdotool
-        xautolock
         xsecurelock
         xss-lock
       ])
@@ -487,21 +486,6 @@ in
       Service = {
         ExecStart = "${pkgs.sxhkd}/bin/sxhkd";
         Environment = [ "PATH=${xsessionPath}" ];
-        Restart = "on-failure";
-        RestartSec = 2;
-      };
-      Install.WantedBy = [ graphicalSessionTarget ];
-    };
-
-    xidle-suspend = {
-      Unit = {
-        Description = "Suspend after idle timeout";
-        ConditionEnvironment = "DISPLAY";
-        PartOf = [ graphicalSessionTarget ];
-        After = [ graphicalSessionTarget ];
-      };
-      Service = {
-        ExecStart = "${pkgs.xautolock}/bin/xautolock -time 30 -detectsleep -locker 'systemctl suspend'";
         Restart = "on-failure";
         RestartSec = 2;
       };

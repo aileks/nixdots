@@ -1,16 +1,20 @@
 {
   dwm,
+  fetchpatch,
   lib,
   libxcb,
 }:
 let
-  patchPath = name: ../dwm/patches + "/${name}";
-  strictPatch = name: ''
-    patch -p1 --batch --forward --fuzz=3 --no-backup-if-mismatch < ${patchPath name}
+  upstreamPatch = name: url: hash: {
+    inherit name;
+    source = fetchpatch { inherit url hash; };
+  };
+  strictPatch = patch: ''
+    patch -p1 --batch --forward --fuzz=3 --no-backup-if-mismatch < ${patch.source}
   '';
-  patchWithKnownConflicts = name: fuzz: expectedFailedHunks: ''
+  patchWithKnownConflicts = patch: fuzz: expectedFailedHunks: ''
     if patch_output=$(patch -p1 --batch --forward --fuzz=${toString fuzz} \
-      --no-backup-if-mismatch --reject-file=- < ${patchPath name} 2>&1); then
+      --no-backup-if-mismatch --reject-file=- < ${patch.source} 2>&1); then
       patch_status=0
     else
       patch_status=$?
@@ -19,20 +23,49 @@ let
     failed_hunks=$(printf '%s\n' "$patch_output" | awk \
       '/Hunk #[0-9]+ FAILED/ { count++ } END { print count + 0 }')
     if [ "$patch_status" -ne 1 ] || [ "$failed_hunks" -ne ${toString expectedFailedHunks} ]; then
-      echo "unexpected patch result for ${name}: status=$patch_status failed_hunks=$failed_hunks" >&2
+      echo "unexpected patch result for ${patch.name}: status=$patch_status failed_hunks=$failed_hunks" >&2
       exit 1
     fi
   '';
   patchesBeforeAttachbelow = [
-    "dwm-actualfullscreen.diff"
-    "dwm-restartsig.diff"
-    "dwm-movestack.diff"
-    "dwm-pertag.diff"
+    (upstreamPatch "dwm-actualfullscreen"
+      "https://dwm.suckless.org/patches/actualfullscreen/dwm-actualfullscreen-6.8.diff"
+      "sha256-uyi01obIlp89gzy6WkLuFfdSKhnx+r2crQx9EIbrCcc="
+    )
+    (upstreamPatch "dwm-restartsig"
+      "https://dwm.suckless.org/patches/restartsig/dwm-restartsig-20180523-6.2.diff"
+      "sha256-OEvtUpbXZrAC/jlcjxigfCQIGYTnr9kFnXOUi7Xzc2k="
+    )
+    (upstreamPatch "dwm-movestack"
+      "https://dwm.suckless.org/patches/movestack/dwm-movestack-20211115-a786211.diff"
+      "sha256-pV02jdJHucu4mG6It9c1sn4T4kKdCKIJWgkifzIYcxA="
+    )
+    (upstreamPatch "dwm-pertag"
+      "https://dwm.suckless.org/patches/pertag/dwm-pertag-20200914-61bb8b2.diff"
+      "sha256-wRZP/27V7xYOBnFAGxqeJFXdoDk4K1EQMA3bEoAXr/0="
+    )
   ];
+  attachbelow =
+    upstreamPatch "dwm-attachbelow"
+      "https://dwm.suckless.org/patches/attachbelow/dwm-attachbelow-6.2.diff"
+    "sha256-Apy+bRQG/MgnJYgrT1aJ6tMrSaK89Ud1nFA/G8NdyqI=";
   patchesAfterAttachbelow = [
-    "dwm-cfacts-vanitygaps.diff"
-    "dwm-alwayscenter.diff"
+    (upstreamPatch "dwm-cfacts-vanitygaps"
+      "https://dwm.suckless.org/patches/vanitygaps/dwm-cfacts-vanitygaps-6.4_combo.diff"
+      "sha256-i/lvTKDXdUrtxpx0epBUz+FSSlO2M+CJu/8SFr2wbG0="
+    )
+    (upstreamPatch "dwm-alwayscenter"
+      "https://dwm.suckless.org/patches/alwayscenter/dwm-alwayscenter-20200625-f04cac6.diff"
+      "sha256-xQEwrNphaLOkhX3ER09sRPB3EEvxC73oNWMVkqo4iSY="
+    )
   ];
+  swallow =
+    upstreamPatch "dwm-swallow" "https://dwm.suckless.org/patches/swallow/dwm-swallow-6.3.diff"
+    "sha256-aQvD6pWGOHG9n8RwCEMMDJhjcwzN52/EJmTGcNHLLGA=";
+  status2dBarpaddingSystray =
+    upstreamPatch "dwm-status2d-barpadding-systray"
+      "https://dwm.suckless.org/patches/status2d/dwm-status2d-barpadding-systray-20241014-b663875.diff"
+    "sha256-qY42EJUQXguzS6Gs5ZDDbbfErhPM77EW2dvMIR2KxWQ=";
 in
 (dwm.override {
   conf = ../dwm/config.def.h;
@@ -46,10 +79,10 @@ in
     patchPhase = ''
       runHook prePatch
       ${lib.concatMapStringsSep "\n" strictPatch patchesBeforeAttachbelow}
-      ${patchWithKnownConflicts "dwm-attachbelow.diff" 3 1}
+      ${patchWithKnownConflicts attachbelow 3 1}
       ${lib.concatMapStringsSep "\n" strictPatch patchesAfterAttachbelow}
-      ${patchWithKnownConflicts "dwm-swallow.diff" 0 5}
-      ${patchWithKnownConflicts "dwm-status2d-barpadding-systray.diff" 0 6}
+      ${patchWithKnownConflicts swallow 0 5}
+      ${patchWithKnownConflicts status2dBarpaddingSystray 0 6}
       patch -p1 --batch --forward --fuzz=0 < ${../dwm/patches/dwm-6.6-fixups.diff}
       runHook postPatch
     '';

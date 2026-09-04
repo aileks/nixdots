@@ -58,7 +58,7 @@ static const Rule rules[] = {
      */
     /* class                   instance  title  tags mask  isfloating
        isfullscreen  isterminal  noswallow  monitor */
-    {"st-256color", NULL, NULL, 0, 0, 0, 1, 0, -1},
+    {"st-256color", NULL, NULL, 0, 0, 0, 1, 0, 0},
     {"xdg-desktop-portal-gtk", NULL, NULL, 0, 1, 0, 0, 0, -1},
     {"qalculate-gtk", NULL, NULL, 0, 1, 0, 0, 0, -1},
     {"polkit-gnome", NULL, NULL, 0, 1, 0, 0, 0, -1},
