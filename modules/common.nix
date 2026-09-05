@@ -106,7 +106,6 @@
     displayManager.sessionCommands = ''
       ${pkgs.gnome-keyring}/bin/gnome-keyring-daemon --start --components=secrets || true
       ${pkgs.xkbcomp}/bin/xkbcomp ${../config/xorg/keymap.xkb} "$DISPLAY"
-      ${pkgs.numlockx}/bin/numlockx on
       ${pkgs.xset}/bin/xset r rate 250 50
       ${pkgs.xset}/bin/xset s 600 5
       ${pkgs.xset}/bin/xset dpms 660 660 660

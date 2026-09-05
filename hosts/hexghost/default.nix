@@ -69,6 +69,8 @@ in
   programs.ydotool.enable = true;
   users.users.${installation.user.name}.extraGroups = [ "ydotool" ];
 
+  services.ivpn.enable = true;
+
   services.hardware.openrgb = {
     enable = true;
     motherboard = "amd";

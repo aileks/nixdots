@@ -76,6 +76,7 @@ in
         dmenu
         starship
         tmux
+        ivpn-ui
         neovim
         go
         lua
