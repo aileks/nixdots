@@ -2,6 +2,7 @@
   config,
   inputs,
   installation,
+  lib,
   pkgs,
   ...
 }:
@@ -39,9 +40,11 @@ in
     deviceSection = ''
       Option "HardDPMS" "false"
     '';
+    displayManager.sessionCommands = lib.mkBefore ''
+      ${pkgs.xrandr}/bin/xrandr --output DP-0 --primary --mode 2560x1440 --rate 200.00 --pos 1080x240 \
+        --output HDMI-0 --mode 1920x1080 --rate 200.00 --rotate left --pos 0x0 || true
+    '';
   };
-
-  hardware.i2c.enable = true;
 
   services.udev.extraRules = ''
     ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="046d", ATTR{idProduct}=="c548", TEST=="power/wakeup", ATTR{power/wakeup}="disabled"
@@ -64,6 +67,7 @@ in
   };
 
   programs.ydotool.enable = true;
+  users.users.${installation.user.name}.extraGroups = [ "ydotool" ];
 
   services.hardware.openrgb = {
     enable = true;
@@ -78,11 +82,29 @@ in
       inputs.voxtype.homeManagerModules.default
     ];
 
-    home.packages = with pkgs; [
-      btop-cuda
-    ];
+    programs.btop.package = pkgs.btop-cuda;
 
     systemd.user.sessionVariables.YDOTOOL_SOCKET = "/run/ydotoold/socket";
+    systemd.user.services.voxtype.Service.Environment = [ "YDOTOOL_SOCKET=/run/ydotoold/socket" ];
+    systemd.user.services.sxhkd = {
+      Unit = {
+        Description = "Dictation hotkeys";
+        ConditionEnvironment = "DISPLAY";
+        PartOf = [ "graphical-session.target" ];
+        After = [ "graphical-session.target" ];
+      };
+      Service = {
+        ExecStart = "${pkgs.sxhkd}/bin/sxhkd -c ${../../config/sxhkd/sxhkdrc}";
+        Environment = [
+          "PATH=${
+            lib.makeBinPath [ voxtypePackage ]
+          }:/etc/profiles/per-user/${installation.user.name}/bin:/run/current-system/sw/bin"
+        ];
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
+      Install.WantedBy = [ "graphical-session.target" ];
+    };
 
     programs.voxtype = {
       enable = true;

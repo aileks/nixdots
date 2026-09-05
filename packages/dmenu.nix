@@ -8,26 +8,7 @@ let
     inherit name expectedFailedHunks;
     source = fetchpatch { inherit url hash; };
   };
-  applyPatch = patch: ''
-    if patch_output=$(patch -p1 --batch --forward --fuzz=3 \
-      --no-backup-if-mismatch --reject-file=- < ${patch.source} 2>&1); then
-      patch_status=0
-    else
-      patch_status=$?
-    fi
-    printf '%s\n' "$patch_output"
-    failed_hunks=$(printf '%s\n' "$patch_output" | awk '
-      /Hunk #[0-9]+ FAILED/ { count++ }
-      /out of [0-9]+ hunks ignored/ { count += $1 }
-      END { print count + 0 }
-    ')
-    expected_status=${if patch.expectedFailedHunks == 0 then "0" else "1"}
-    if [ "$patch_status" -ne "$expected_status" ] || \
-      [ "$failed_hunks" -ne ${toString patch.expectedFailedHunks} ]; then
-      echo "unexpected patch result for ${patch.name}: status=$patch_status failed_hunks=$failed_hunks" >&2
-      exit 1
-    fi
-  '';
+  applyPatch = import ./apply-patch.nix;
   patches = [
     (upstreamPatch "dmenu-alpha"
       "https://tools.suckless.org/dmenu/patches/alpha/dmenu-alpha-20251118-8b48986.diff"
@@ -74,7 +55,7 @@ in
 (dmenu.override {
   conf = ../config/dmenu/config.def.h;
 }).overrideAttrs
-  (old: {
+  (_: {
     # navhistory-with-search pulls in libm
     NIX_LDFLAGS = "-lm";
     # Known patch conflicts are integrated by the local 5.4 fixup, while

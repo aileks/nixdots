@@ -63,7 +63,6 @@
       "wheel"
       "networkmanager"
       "i2c"
-      "ydotool"
     ];
   };
 
@@ -105,8 +104,6 @@
       package = pkgs.dwm;
     };
     displayManager.sessionCommands = ''
-      ${pkgs.xrandr}/bin/xrandr --output DP-0 --primary --mode 2560x1440 --rate 200.00 --pos 1080x240 \
-        --output HDMI-0 --mode 1920x1080 --rate 200.00 --rotate left --pos 0x0 || true
       ${pkgs.gnome-keyring}/bin/gnome-keyring-daemon --start --components=secrets || true
       ${pkgs.xkbcomp}/bin/xkbcomp ${../config/xorg/keymap.xkb} "$DISPLAY"
       ${pkgs.numlockx}/bin/numlockx on
@@ -136,7 +133,6 @@
   programs = {
     dconf.enable = true;
     nix-ld.enable = true;
-    ydotool.enable = true;
     thunar = {
       enable = true;
       plugins = with pkgs; [

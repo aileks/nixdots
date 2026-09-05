@@ -95,17 +95,9 @@ export _ZO_FZF_OPTS="
   --bind 'ctrl-/:change-preview-window(right|hidden|)'"
 
 # Antidote
-for antidote_script in /usr/share/zsh-antidote/antidote.zsh "$HOME/.antidote/antidote.zsh"; do
-  if [[ -f $antidote_script ]]; then
-    source "$antidote_script"
-    break
-  fi
-done
-if (( $+functions[antidote] )); then
-  antidote load "${${(%):-%N}:A:h}/zsh_plugins.txt"
-  source "${${(%):-%N}:A:h}/cinder-grove.zsh"
-fi
-unset antidote_script
+source "$HOME/.antidote/antidote.zsh"
+antidote load "${${(%):-%N}:A:h}/zsh_plugins.txt"
+source "${${(%):-%N}:A:h}/cinder-grove.zsh"
 
 # Evals
 eval "$(zoxide init zsh)"

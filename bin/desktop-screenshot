@@ -14,7 +14,7 @@ esac
 pictures_directory=$(xdg-user-dir PICTURES 2>/dev/null || true)
 directory="${pictures_directory:-${XDG_PICTURES_DIR:-$HOME/Pictures}}/Screenshots"
 mkdir -p "$directory"
-file="$directory/$(date +%Y-%m-%d_%H-%M-%S).png"
+file="$directory/$(date +%Y-%m-%d_%H-%M-%S-%N).png"
 
 case "$mode" in
   region) maim -s "$file" ;;

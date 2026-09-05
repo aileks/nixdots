@@ -47,7 +47,7 @@
  	FcCharSet *fccharset;
 -	int i, f, numspecs = 0;
 +	int f, code_idx, numspecs = 0;
-+	float cluster_xp = xp, cluster_yp = yp;
++	float cluster_xp, cluster_yp;
 +	HbTransformData shaped = { 0 };
 +
 +	/* Initial values. */

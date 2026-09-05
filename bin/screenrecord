@@ -6,11 +6,16 @@ videos_directory=$(xdg-user-dir VIDEOS 2>/dev/null || true)
 directory="${videos_directory:-${XDG_VIDEOS_DIR:-$HOME/Videos}}/Recordings"
 statefile="${XDG_RUNTIME_DIR:-/run/user/$UID}/screenrecord.state"
 
+# Serialize the state check and start/stop operation, including region selection.
+exec 9>"$statefile.lock"
+flock -n 9 || exit 1
+
 recording_is_live() {
-  local current_start_time executable
+  local current_start_time process_state executable
   [[ ${pid:-} =~ ^[0-9]+$ && ${start_time:-} =~ ^[0-9]+$ ]] || return 1
   kill -0 "$pid" 2>/dev/null || return 1
-  current_start_time=$(awk '{ print $22 }' "/proc/$pid/stat" 2>/dev/null) || return 1
+  read -r process_state current_start_time < <(awk '{ print $3, $22 }' "/proc/$pid/stat" 2>/dev/null) || return 1
+  [[ $process_state != Z ]] || return 1
   [[ $current_start_time == "$start_time" ]] || return 1
   executable=$(readlink -f "/proc/$pid/exe" 2>/dev/null) || return 1
   [[ ${executable##*/} == gpu-screen-recorder ]]
@@ -29,10 +34,10 @@ stop_recording() {
   # gpu-screen-recorder finalizes the mp4 on SIGINT
   kill -INT "$pid"
   for _ in {1..50}; do
-    kill -0 "$pid" 2>/dev/null || break
+    recording_is_live || break
     sleep 0.1
   done
-  if kill -0 "$pid" 2>/dev/null; then
+  if recording_is_live; then
     notify-send -u critical -a Recording "Recording did not stop" \
       "The recorder is still finalizing. Try again before starting another recording."
     exit 1
@@ -91,7 +96,7 @@ fi
 
 rm -f "$statefile"
 mkdir -p "$directory"
-file="$directory/$(date +%Y-%m-%d_%H-%M-%S).mp4"
+file="$directory/$(date +%Y-%m-%d_%H-%M-%S-%N).mp4"
 
 case "$mode" in
   output)
@@ -136,7 +141,7 @@ case "$audio" in
   *) exit 2 ;;
 esac
 
-gpu-screen-recorder "${args[@]}" -f 60 "${audio_args[@]}" -c mp4 -o "$file" &
+gpu-screen-recorder "${args[@]}" -f 60 "${audio_args[@]}" -c mp4 -o "$file" 9>&- &
 pid=$!
 sleep 0.2
 if ! kill -0 "$pid" 2>/dev/null; then

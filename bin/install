@@ -56,6 +56,7 @@ done
 
 target_root=$(readlink -f "$target_root")
 [[ -d $target_root ]] || fail "target root does not exist: $target_root"
+[[ $target_root != / ]] || fail "target root must not be the running system"
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 installation_json=$(nix eval --json "$repo_root#lib.installation") \
@@ -96,9 +97,9 @@ done
 
 check_mount() {
   local mountpoint=$1 label=$2 expected_type=$3 source filesystem_type
-  source=$(findmnt --noheadings --output SOURCE --target "$mountpoint" 2>/dev/null) \
+  source=$(findmnt --noheadings --output SOURCE --mountpoint "$mountpoint" 2>/dev/null) \
     || fail "$mountpoint is not mounted"
-  filesystem_type=$(findmnt --noheadings --output FSTYPE --target "$mountpoint")
+  filesystem_type=$(findmnt --noheadings --output FSTYPE --mountpoint "$mountpoint")
   [[ $(readlink -f "$source") == "${label_devices[$label]}" ]] \
     || fail "$mountpoint is not mounted from the '$label' filesystem"
   [[ $filesystem_type == "$expected_type" ]] \
@@ -140,6 +141,10 @@ if [[ -n $machine_hostname ]]; then
   [[ -f $machine_dir/default.nix ]] || fail "host is not declared: $machine_hostname"
   [[ -f $machine_dir/hardware-configuration.nix ]] \
     || fail "host is missing hardware-configuration.nix: $machine_hostname"
+  declared_hosts=$(nix eval --json "$repo_root#nixosConfigurations" --apply builtins.attrNames) \
+    || fail "could not read declared hosts from the flake"
+  jq -e --arg hostname "$machine_hostname" 'index($hostname) != null' <<<"$declared_hosts" >/dev/null \
+    || fail "host is missing from nixosConfigurations: $machine_hostname"
 fi
 
 printf '%s\n' "Preflight passed: labeled storage, mounts, swap, UEFI, and submodules are ready."

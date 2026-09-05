@@ -10,24 +10,7 @@ let
     inherit name;
     source = fetchpatch { inherit url hash; };
   };
-  strictPatch = patch: ''
-    patch -p1 --batch --forward --fuzz=3 --no-backup-if-mismatch < ${patch.source}
-  '';
-  patchWithKnownConflicts = patch: fuzz: expectedFailedHunks: ''
-    if patch_output=$(patch -p1 --batch --forward --fuzz=${toString fuzz} \
-      --no-backup-if-mismatch --reject-file=- < ${patch.source} 2>&1); then
-      patch_status=0
-    else
-      patch_status=$?
-    fi
-    printf '%s\n' "$patch_output"
-    failed_hunks=$(printf '%s\n' "$patch_output" | awk \
-      '/Hunk #[0-9]+ FAILED/ { count++ } END { print count + 0 }')
-    if [ "$patch_status" -ne 1 ] || [ "$failed_hunks" -ne ${toString expectedFailedHunks} ]; then
-      echo "unexpected patch result for ${patch.name}: status=$patch_status failed_hunks=$failed_hunks" >&2
-      exit 1
-    fi
-  '';
+  applyPatch = import ./apply-patch.nix;
   patchesBeforeAttachbelow = [
     (upstreamPatch "dwm-actualfullscreen"
       "https://dwm.suckless.org/patches/actualfullscreen/dwm-actualfullscreen-6.8.diff"
@@ -79,18 +62,42 @@ in
     libxcursor
   ];
 }).overrideAttrs
-  (old: {
+  (_: {
     NIX_LDFLAGS = "-lXcursor";
     # Keep upstream patches unchanged. Known overlaps are integrated by the
     # local 6.6 fixup, while unexpected reject counts fail the build.
     patchPhase = ''
       runHook prePatch
-      ${lib.concatMapStringsSep "\n" strictPatch patchesBeforeAttachbelow}
-      ${patchWithKnownConflicts attachbelow 3 1}
-      ${lib.concatMapStringsSep "\n" strictPatch patchesAfterAttachbelow}
-      ${patchWithKnownConflicts swallow 0 5}
-      ${patchWithKnownConflicts status2dBarpaddingSystray 0 6}
-      ${patchWithKnownConflicts statuscmdStatus2d 0 6}
+      ${lib.concatMapStringsSep "\n" applyPatch patchesBeforeAttachbelow}
+      ${applyPatch (
+        attachbelow
+        // {
+          fuzz = 3;
+          expectedFailedHunks = 1;
+        }
+      )}
+      ${lib.concatMapStringsSep "\n" applyPatch patchesAfterAttachbelow}
+      ${applyPatch (
+        swallow
+        // {
+          fuzz = 0;
+          expectedFailedHunks = 5;
+        }
+      )}
+      ${applyPatch (
+        status2dBarpaddingSystray
+        // {
+          fuzz = 0;
+          expectedFailedHunks = 6;
+        }
+      )}
+      ${applyPatch (
+        statuscmdStatus2d
+        // {
+          fuzz = 0;
+          expectedFailedHunks = 6;
+        }
+      )}
       patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-6.6-fixups.diff}
       patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-themed-cursors.diff}
       runHook postPatch

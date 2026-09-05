@@ -80,18 +80,14 @@
             ./modules/storage.nix
             (./hosts + "/${hostName}")
             home-manager.nixosModules.home-manager
-            (
-              { pkgs, ... }:
-              {
-                home-manager = {
-                  useGlobalPkgs = true;
-                  useUserPackages = true;
-                  # backupCommand = "${pkgs.trash-cli}/bin/trash-put";
-                  extraSpecialArgs = { inherit inputs installation; };
-                  users.${installation.user.name} = import ./home.nix;
-                };
-              }
-            )
+            {
+              home-manager = {
+                useGlobalPkgs = true;
+                useUserPackages = true;
+                extraSpecialArgs = { inherit inputs installation; };
+                users.${installation.user.name} = import ./home.nix;
+              };
+            }
           ];
         };
       hosts = nixpkgs.lib.genAttrs hostNames mkHost;
@@ -101,15 +97,15 @@
       sourceCheck =
         pkgs.runCommand "nixdots-source-check"
           {
-            INSTALLATION_TEST_JSON = builtins.toJSON installation;
             nativeBuildInputs = with pkgs; [
               findutils
-              jq
               libxml2
               lua
               nixfmt
+              python3
               shellcheck
               shfmt
+              stdenv.cc
               util-linux
               zsh
             ];
@@ -123,8 +119,10 @@
               | xargs -0 -r nixfmt --check
             shellcheck bin/*
             shfmt -d -i 2 -ci -bn bin/*
+            python3 -B -m unittest discover -s tests
             zsh -n config/zsh/zshrc
-            find config/nvim -type f -name '*.lua' -exec luac -p {} \;
+            zsh -n config/zsh/cinder-grove.zsh
+            find config/nvim -type f -name '*.lua' -print0 | xargs -0 -r -n 1 luac -p
             xmllint --noout config/fontconfig/fonts.conf config/bat/themes/cinder-grove.tmTheme
 
             touch "$out"

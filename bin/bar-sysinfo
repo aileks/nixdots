@@ -13,4 +13,7 @@ for d in /sys/class/hwmon/hwmon*; do
     break
   fi
 done
-printf '^c#6785A1^%s%%^d^ ^c#E17A3F^%sC^d^' "$mem" "$temp"
+printf '^c#6785A1^%s%%^d^' "$mem"
+if [[ -n $temp ]]; then
+  printf ' ^c#E17A3F^%sC^d^' "$temp"
+fi

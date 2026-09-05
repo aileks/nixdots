@@ -21,160 +21,12 @@ let
     "fontconfig/fonts.conf" = "fontconfig/fonts.conf";
     "nvim" = "nvim";
     "qt6ct" = "qt6ct";
-    "sxhkd" = "sxhkd";
     "tmux" = "tmux";
     "starship.toml" = "starship/starship.toml";
   };
   cinderGroveGtk = pkgs.cinder-grove-gtk;
   papirusCinderGrove = pkgs.papirus-cinder-grove;
   zenTwilight = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.twilight;
-  dwmblocksPath = lib.makeBinPath (
-    with pkgs;
-    [
-      coreutils
-      gawk
-      procps
-      wireplumber
-    ]
-  );
-  barVolume = pkgs.writeShellApplication {
-    name = "bar-volume";
-    runtimeInputs = with pkgs; [
-      gawk
-      wireplumber
-    ];
-    text = builtins.readFile ./bin/bar-volume;
-  };
-  barSysinfo = pkgs.writeShellApplication {
-    name = "bar-sysinfo";
-    runtimeInputs = with pkgs; [
-      coreutils
-      gawk
-      procps
-      st
-    ];
-    text = builtins.readFile ./bin/bar-sysinfo;
-  };
-  barClock = pkgs.writeShellApplication {
-    name = "bar-clock";
-    runtimeInputs = with pkgs; [ coreutils ];
-    text = builtins.readFile ./bin/bar-clock;
-  };
-  powerMenu = pkgs.writeShellApplication {
-    name = "power-menu";
-    runtimeInputs = with pkgs; [
-      dmenu
-      procps
-      systemd
-    ];
-    text = ''
-      choice=$(printf '%s\n' "log out" "reboot" "shut down" | dmenu -p power)
-      case "$choice" in
-        "log out") pkill dwm ;;
-        "reboot") systemctl reboot ;;
-        "shut down") systemctl poweroff ;;
-      esac
-    '';
-  };
-  desktopFeedback = pkgs.writeShellApplication {
-    name = "desktop-feedback";
-    runtimeInputs = [ pkgs.dunst ];
-    text = builtins.readFile ./bin/desktop-feedback;
-  };
-  nightLight = pkgs.writeShellApplication {
-    name = "night-light";
-    runtimeInputs = [
-      desktopFeedback
-      pkgs.coreutils
-      pkgs.gammastep
-    ];
-    text = ''
-      if [ -f /tmp/night-light-on ]; then
-        if gammastep -x; then
-          rm -f /tmp/night-light-on
-          desktop-feedback status "Night light off" || true
-        else
-          desktop-feedback status "Night light change failed" || true
-          exit 1
-        fi
-      else
-        if gammastep -O 4800; then
-          touch /tmp/night-light-on
-          desktop-feedback status "Night light on" || true
-        else
-          desktop-feedback status "Night light change failed" || true
-          exit 1
-        fi
-      fi
-    '';
-  };
-  volume = pkgs.writeShellApplication {
-    name = "volume";
-    runtimeInputs = [
-      desktopFeedback
-      pkgs.gawk
-      pkgs.procps
-      pkgs.wireplumber
-    ];
-    text = builtins.readFile ./bin/volume;
-  };
-  brightness = pkgs.writeShellApplication {
-    name = "brightness";
-    runtimeInputs = [
-      desktopFeedback
-      pkgs.ddcutil
-      pkgs.gawk
-    ];
-    text = builtins.readFile ./bin/brightness;
-  };
-  dndToggle = pkgs.writeShellApplication {
-    name = "dnd-toggle";
-    runtimeInputs = [
-      desktopFeedback
-      pkgs.dunst
-    ];
-    text = builtins.readFile ./bin/dnd-toggle;
-  };
-  microphoneMute = pkgs.writeShellApplication {
-    name = "microphone-mute";
-    runtimeInputs = [
-      desktopFeedback
-      pkgs.wireplumber
-    ];
-    text = builtins.readFile ./bin/microphone-mute;
-  };
-  screenrecord = pkgs.writeShellApplication {
-    name = "screenrecord";
-    runtimeInputs = with pkgs; [
-      coreutils
-      gawk
-      gpu-screen-recorder
-      libnotify
-      slop
-      xdg-utils
-      xdotool
-      xrandr
-    ];
-    text = builtins.readFile ./bin/screenrecord;
-  };
-  desktopScreenshot = pkgs.writeShellApplication {
-    name = "desktop-screenshot";
-    runtimeInputs = with pkgs; [
-      coreutils
-      libnotify
-      maim
-      slop
-      xclip
-      xdg-utils
-      xdotool
-    ];
-    text = builtins.readFile ./bin/desktop-screenshot;
-  };
-  recordMenu = pkgs.writeShellApplication {
-    name = "record-menu";
-    runtimeInputs = with pkgs; [ dmenu ];
-    text = builtins.readFile ./bin/record-menu;
-  };
   xsessionPath = lib.concatStringsSep ":" [
     "${config.home.profileDirectory}/bin"
     "/run/current-system/sw/bin"
@@ -182,6 +34,8 @@ let
   ];
 in
 {
+  imports = [ ./home/scripts.nix ];
+
   home = {
     username = installation.user.name;
     inherit (installation.user) homeDirectory;
@@ -273,7 +127,6 @@ in
         dunst
         feh
         numlockx
-        sxhkd
         wiremix
         wireplumber
         xdotool
@@ -293,19 +146,6 @@ in
 
     file = {
       ".local/bin/zen-browser-twilight".source = "${zenTwilight}/bin/zen-twilight";
-      ".local/bin/bar-volume".source = lib.getExe barVolume;
-      ".local/bin/bar-sysinfo".source = lib.getExe barSysinfo;
-      ".local/bin/bar-clock".source = lib.getExe barClock;
-      ".local/bin/power-menu".source = lib.getExe powerMenu;
-      ".local/bin/desktop-feedback".source = lib.getExe desktopFeedback;
-      ".local/bin/night-light".source = lib.getExe nightLight;
-      ".local/bin/screenrecord".source = lib.getExe screenrecord;
-      ".local/bin/desktop-screenshot".source = lib.getExe desktopScreenshot;
-      ".local/bin/record-menu".source = lib.getExe recordMenu;
-      ".local/bin/volume".source = lib.getExe volume;
-      ".local/bin/brightness".source = lib.getExe brightness;
-      ".local/bin/dnd-toggle".source = lib.getExe dndToggle;
-      ".local/bin/microphone-mute".source = lib.getExe microphoneMute;
       ".zshrc".source = createSymlink "zsh/zshrc";
       ".antidote/antidote.zsh".source = "${pkgs.antidote}/share/antidote/antidote.zsh";
     };
@@ -442,7 +282,6 @@ in
 
   systemd.user.services = {
     picom.Unit.ConditionEnvironment = "DISPLAY";
-    voxtype.Service.Environment = [ "YDOTOOL_SOCKET=/run/ydotoold/socket" ];
 
     dwmblocks = {
       Unit = {
@@ -453,7 +292,7 @@ in
       };
       Service = {
         ExecStart = lib.getExe pkgs.dwmblocks;
-        Environment = [ "PATH=${dwmblocksPath}:${xsessionPath}" ];
+        Environment = [ "PATH=${xsessionPath}" ];
         Restart = "on-failure";
         RestartSec = 2;
       };
@@ -485,22 +324,6 @@ in
       Service = {
         Type = "oneshot";
         ExecStart = "${lib.getExe pkgs.feh} --no-fehbg --bg-fill ${config.home.homeDirectory}/.local/share/backgrounds/fantasy-woods.jpg";
-      };
-      Install.WantedBy = [ graphicalSessionTarget ];
-    };
-
-    sxhkd = {
-      Unit = {
-        Description = "sxhkd key daemon";
-        ConditionEnvironment = "DISPLAY";
-        PartOf = [ graphicalSessionTarget ];
-        After = [ graphicalSessionTarget ];
-      };
-      Service = {
-        ExecStart = "${pkgs.sxhkd}/bin/sxhkd";
-        Environment = [ "PATH=${xsessionPath}" ];
-        Restart = "on-failure";
-        RestartSec = 2;
       };
       Install.WantedBy = [ graphicalSessionTarget ];
     };
@@ -553,5 +376,6 @@ in
 
   };
 
+  programs.btop.enable = true;
   programs.home-manager.enable = true;
 }
