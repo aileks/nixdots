@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Stop on every lock so Picom is also absent when suspending an already locked session.
+restart_picom=false
+if systemctl --user is-active --quiet picom.service; then
+  if systemctl --user stop picom.service; then
+    restart_picom=true
+  else
+    echo "Could not stop Picom before locking" >&2
+  fi
+fi
+
+xsecurelock &
+locker_pid=$!
+trap 'kill "$locker_pid" 2>/dev/null || true' HUP INT TERM
+
+# XSecureLock inherits the inhibitor and releases it once the screen is locked.
+# The waiting wrapper must not keep its own copy open through suspend.
+if [[ -n ${XSS_SLEEP_LOCK_FD:-} ]]; then
+  exec {XSS_SLEEP_LOCK_FD}<&-
+fi
+
+status=0
+wait "$locker_pid" || status=$?
+
+# Failed authentication keeps the locker running. Only a successful exit restores Picom.
+if (( status == 0 )) && "$restart_picom"; then
+  systemctl --user start picom.service
+fi
+exit "$status"

@@ -32,6 +32,14 @@ let
     "/run/current-system/sw/bin"
     "${config.home.homeDirectory}/.local/bin"
   ];
+  lockSession = pkgs.writeShellApplication {
+    name = "lock-session";
+    runtimeInputs = [
+      pkgs.systemd
+      pkgs.xsecurelock
+    ];
+    text = builtins.readFile ./bin/lock-session;
+  };
 in
 {
   imports = [ ./home/scripts.nix ];
@@ -170,7 +178,7 @@ in
   ];
   xsession.initExtra = ''
     pkill -x xss-lock 2>/dev/null || true
-    ${pkgs.xss-lock}/bin/xss-lock -l ${pkgs.xsecurelock}/bin/xsecurelock &
+    ${pkgs.xss-lock}/bin/xss-lock -l ${lib.getExe lockSession} &
   '';
 
   xresources.properties."Xft.dpi" = 96;
@@ -282,6 +290,8 @@ in
 
   systemd.user.services = {
     picom.Unit.ConditionEnvironment = "DISPLAY";
+    # Leave time for the locker within logind's sleep inhibitor deadline.
+    picom.Service.TimeoutStopSec = 2;
 
     dwmblocks = {
       Unit = {
