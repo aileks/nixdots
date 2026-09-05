@@ -1,6 +1,11 @@
 { config, pkgs, ... }:
 
 let
+  barDnd = pkgs.writeShellApplication {
+    name = "bar-dnd";
+    runtimeInputs = [ pkgs.dunst ];
+    text = builtins.readFile ../bin/bar-dnd;
+  };
   barVolume = pkgs.writeShellApplication {
     name = "bar-volume";
     runtimeInputs = with pkgs; [
@@ -142,6 +147,7 @@ let
 in
 {
   home.packages = [
+    barDnd
     barVolume
     barSysinfo
     barClock
