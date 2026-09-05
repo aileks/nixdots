@@ -123,8 +123,8 @@ let
     ];
     text = builtins.readFile ../bin/screenrecord;
   };
-  desktopScreenshot = pkgs.writeShellApplication {
-    name = "desktop-screenshot";
+  screenshot = pkgs.writeShellApplication {
+    name = "screenshot";
     runtimeInputs = with pkgs; [
       coreutils
       libnotify
@@ -134,7 +134,7 @@ let
       xdg-user-dirs
       xdotool
     ];
-    text = builtins.readFile ../bin/desktop-screenshot;
+    text = builtins.readFile ../bin/screenshot;
   };
   recordMenu = pkgs.writeShellApplication {
     name = "record-menu";
@@ -160,7 +160,7 @@ in
     dndToggle
     microphoneMute
     screenrecord
-    desktopScreenshot
+    screenshot
     recordMenu
   ];
 }

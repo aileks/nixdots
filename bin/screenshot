@@ -4,7 +4,7 @@ mode=${1:-}
 case "$mode" in
   region | window | full) ;;
   *)
-    printf 'usage: desktop-screenshot <region|window|full>\n' >&2
+    printf 'usage: screenshot <region|window|full>\n' >&2
     exit 2
     ;;
 esac
