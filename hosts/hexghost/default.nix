@@ -119,7 +119,7 @@ in
         hotkey.enabled = false;
         audio.pause_media = true;
         osd = {
-          enabled = false;
+          enabled = true;
           frontend = "gtk4";
           top_margin = 0.6;
         };

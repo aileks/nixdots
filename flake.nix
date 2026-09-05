@@ -128,12 +128,26 @@
 
             touch "$out"
           '';
+      dwmFocus =
+        pkgs.runCommand "dwm-focus-check"
+          {
+            nativeBuildInputs = [
+              (pkgs.python3.withPackages (p: [ p.xlib ]))
+              pkgs.xorg-server
+            ];
+            FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
+          }
+          ''
+            export HOME="$TMPDIR"
+            python ${./tests/dwm_focus.py} ${pkgs.dwm}/bin/dwm
+            touch "$out"
+          '';
     in
     {
       lib = { inherit installation; };
       overlays.default = overlay;
       packages.${system} = localPackages;
-      checks.${system} = localPackages // hostChecks // { inherit sourceCheck; };
+      checks.${system} = localPackages // hostChecks // { inherit sourceCheck dwmFocus; };
       formatter.${system} = pkgs.nixfmt-tree;
 
       nixosConfigurations = hosts;

@@ -1,0 +1,173 @@
+--- a/dwm.c
++++ b/dwm.c
+@@ -113,7 +113,7 @@
+ 	int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;
+ 	int bw, oldbw;
+ 	unsigned int tags;
+-	int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen, isterminal, noswallow;
++	int isfixed, isfloating, canfocus, isurgent, neverfocus, oldstate, isfullscreen, isterminal, noswallow;
+ 	pid_t pid;
+ 	char scratchkey;
+ 	int scratchwasfloating;
+@@ -173,6 +173,7 @@
+ 	int isterminal;
+ 	int noswallow;
+ 	int monitor;
++	int canfocus;
+ 	const char scratchkey;
+ } Rule;
+ 
+@@ -388,6 +389,7 @@
+ 			
+ 			c->isterminal = r->isterminal;
+ 			c->noswallow = r->noswallow;
++			c->canfocus = r->canfocus;
+ 			c->isfloating = r->isfloating;
+ 			c->tags |= r->tags;
+ 			c->scratchkey = r->scratchkey;
+@@ -581,6 +583,11 @@
+ 	XButtonPressedEvent *ev = &e->xbutton;
+ 
+ 	click = ClkRootWin;
++	c = wintoclient(ev->window);
++	if (c && !c->canfocus) {
++		XAllowEvents(dpy, ReplayPointer, CurrentTime);
++		return;
++	}
+ 	/* focus monitor if necessary */
+ 	if ((m = wintomon(ev->window)) && m != selmon) {
+ 		unfocus(selmon->sel, 1);
+@@ -938,7 +945,7 @@
+ 	*tc = c->snext;
+ 
+ 	if (c == c->mon->sel) {
+-		for (t = c->mon->stack; t && !ISVISIBLE(t); t = t->snext);
++		for (t = c->mon->stack; t && (!ISVISIBLE(t) || !t->canfocus); t = t->snext);
+ 		c->mon->sel = t;
+ 	}
+ }
+@@ -1146,6 +1153,8 @@
+ 	if ((ev->mode != NotifyNormal || ev->detail == NotifyInferior) && ev->window != root)
+ 		return;
+ 	c = wintoclient(ev->window);
++	if (c && !c->canfocus)
++		return;
+ 	m = c ? c->mon : wintomon(ev->window);
+ 	if (m != selmon) {
+ 		unfocus(selmon->sel, 1);
+@@ -1171,13 +1180,13 @@
+ void
+ focus(Client *c)
+ {
++	if (c && !c->canfocus)
++		return;
+ 	if (!c || !ISVISIBLE(c))
+-		for (c = selmon->stack; c && !ISVISIBLE(c); c = c->snext);
++		for (c = selmon->stack; c && (!ISVISIBLE(c) || !c->canfocus); c = c->snext);
+ 	if (selmon->sel && selmon->sel != c)
+ 		unfocus(selmon->sel, 0);
+ 	if (c) {
+-        if (!c->canfocus)
+-            return;
+ 		if (c->mon != selmon)
+ 			selmon = c->mon;
+ 		if (c->isurgent)
+@@ -1203,6 +1212,8 @@
+ 
+ 	if (selmon->sel && ev->window != selmon->sel->win)
+ 		setfocus(selmon->sel);
++	else if (!selmon->sel && wintoclient(ev->window))
++		focus(NULL);
+ }
+ 
+ void
+@@ -1227,16 +1238,16 @@
+ 	if (!selmon->sel || (selmon->sel->isfullscreen && lockfullscreen))
+ 		return;
+ 	if (arg->i > 0) {
+-		for (c = selmon->sel->next; c && !ISVISIBLE(c); c = c->next);
++		for (c = selmon->sel->next; c && (!ISVISIBLE(c) || !c->canfocus); c = c->next);
+ 		if (!c)
+-			for (c = selmon->clients; c && !ISVISIBLE(c); c = c->next);
++			for (c = selmon->clients; c && (!ISVISIBLE(c) || !c->canfocus); c = c->next);
+ 	} else {
+ 		for (i = selmon->clients; i != selmon->sel; i = i->next)
+-			if (ISVISIBLE(i))
++			if (ISVISIBLE(i) && i->canfocus)
+ 				c = i;
+ 		if (!c)
+ 			for (; i; i = i->next)
+-				if (ISVISIBLE(i))
++				if (ISVISIBLE(i) && i->canfocus)
+ 					c = i;
+ 	}
+ 	if (c) {
+@@ -1464,6 +1475,8 @@
+ 
+ 	c = ecalloc(1, sizeof(Client));
+ 	c->win = w;
++	/* Transient dialogs skip applyrules(), but must still accept focus. */
++	c->canfocus = 1;
+ 	c->pid = winpid(w);
+ 	/* geometry */
+ 	c->x = c->oldx = wa->x;
+@@ -1515,14 +1528,17 @@
+ 		(unsigned char *) &(c->win), 1);
+ 	XMoveResizeWindow(dpy, c->win, c->x + 2 * sw, c->y, c->w, c->h); /* some windows require this */
+ 	setclientstate(c, NormalState);
+-	if (c->mon == selmon)
+-		unfocus(selmon->sel, 0);
+-	c->mon->sel = c;
++	if (c->canfocus) {
++		if (c->mon == selmon)
++			unfocus(selmon->sel, 0);
++		c->mon->sel = c;
++	}
+ 	arrange(c->mon);
+ 	XMapWindow(dpy, c->win);
+ 	if (term)
+ 		swallow(term, c);
+ 	focus(NULL);
++	restack(c->mon);
+ }
+ 
+ void
+@@ -1876,9 +1892,7 @@
+ 	XWindowChanges wc;
+ 
+ 	drawbar(m);
+-	if (!m->sel)
+-		return;
+-	if (m->sel->isfloating || !m->lt[m->sellt]->arrange)
++	if (m->sel && (m->sel->isfloating || !m->lt[m->sellt]->arrange))
+ 		XRaiseWindow(dpy, m->sel->win);
+ 	if (m->lt[m->sellt]->arrange) {
+ 		wc.stack_mode = Below;
+@@ -1889,6 +1903,10 @@
+ 				wc.sibling = c->win;
+ 			}
+ 	}
++	/* Non-interactive floating overlays stay visible without being selected. */
++	for (c = m->stack; c; c = c->snext)
++		if (!c->canfocus && c->isfloating && ISVISIBLE(c))
++			XRaiseWindow(dpy, c->win);
+ 	XSync(dpy, False);
+ 	while (XCheckMaskEvent(dpy, EnterWindowMask, &ev));
+ }
+@@ -1998,6 +2016,8 @@
+ void
+ setfocus(Client *c)
+ {
++	if (!c->canfocus)
++		return;
+ 	if (!c->neverfocus) {
+ 		XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
+ 		XChangeProperty(dpy, root, netatom[NetActiveWindow],
+@@ -2020,6 +2040,7 @@
+ 		c->isfloating = 1;
+ 		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
+ 		XRaiseWindow(dpy, c->win);
++		restack(c->mon);
+ 	} else if (!fullscreen && c->isfullscreen){
+ 		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
+ 			PropModeReplace, (unsigned char*)0, 0);

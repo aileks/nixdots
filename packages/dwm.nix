@@ -58,6 +58,10 @@ let
     upstreamPatch "dwm-renamedscratchpads"
       "https://raw.githubusercontent.com/bakkeby/patches/d99bbe2c7a3a9d01a3b934219c1b785b38518d84/dwm/dwm-renamedscratchpads_noscheme-6.6.diff"
       "sha256-UI8Bj1c5xBjuob6Nk5OM45PjAyQiniQ4v6JgMmRtmQM=";
+  canfocusRule =
+    upstreamPatch "dwm-canfocusrule"
+      "https://dwm.suckless.org/patches/canfocusrule/dwm-canfocusrule-20200702-f709b19.diff"
+      "sha256-yj/yorl8x74uwtYig/hTGXZbBR1vBUncuEBTJkb4t2U=";
 in
 (dwm.override {
   conf = ../config/dwm/config.def.h;
@@ -115,6 +119,15 @@ in
       # Integrate declarations and preserve single-window assignment, release,
       # fullscreen, swallowing, and restart behavior around the upstream toggle.
       patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-renamedscratchpads-fixups.diff}
+      ${applyPatch (
+        canfocusRule
+        // {
+          fuzz = 0;
+          # Config, Client/Rule declarations, rule matching, and focusstack overlaps.
+          expectedFailedHunks = 6;
+        }
+      )}
+      patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-canfocusrule-fixups.diff}
       runHook postPatch
     '';
   })

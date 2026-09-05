@@ -48,12 +48,14 @@ static const Rule rules[] = {
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	 */
-	/* class                     instance    title       tags mask     isfloating   isfullscreen   isterminal   noswallow   monitor   scratchkey */
-	{ "st-256color",             NULL,       NULL,       0,            0,           0,             1,           0,          0,        0 },
-	{ "xdg-desktop-portal-gtk",  NULL,       NULL,       0,            1,           0,             0,           0,          -1,       0 },
-	{ "Qalculate-gtk",           NULL,       NULL,       0,            1,           0,             0,           0,          -1,       0 },
-	{ "polkit-gnome",            NULL,       NULL,       0,            1,           0,             0,           0,          -1,       0 },
-	{ "nm-connection-editor",    NULL,       NULL,       0,            1,           0,             0,           0,          -1,       0 },
+	/* class                     instance    title       tags mask     isfloating   isfullscreen   isterminal   noswallow   monitor   canfocus   scratchkey */
+	{ "st-256color",             NULL,       NULL,       0,            0,           0,             1,           0,          0,        1,         0 },
+	{ "xdg-desktop-portal-gtk",  NULL,       NULL,       0,            1,           0,             0,           0,          -1,       1,         0 },
+	{ "Qalculate-gtk",           NULL,       NULL,       0,            1,           0,             0,           0,          -1,       1,         0 },
+	{ "polkit-gnome",            NULL,       NULL,       0,            1,           0,             0,           0,          -1,       1,         0 },
+	{ "nm-connection-editor",    NULL,       NULL,       0,            1,           0,             0,           0,          -1,       1,         0 },
+	/* Non-interactive floating windows stay above clients without taking focus. */
+	{ "voxtype-osd-gtk4",        NULL,       NULL,       0,            1,           0,             0,           1,          -1,       0,         0 },
 };
 
 /* layout(s) */
