@@ -5,7 +5,7 @@ export PATH="$HOME/.local/bin:$PATH"
 export EDITOR="nvim"
 export VISUAL="$EDITOR"
 export SUDO_EDITOR="$VISUAL"
-export MANPAGER='bat --theme="cinder-grove" -plman'
+export MANPAGER='nvim +Man!'
 export DOCKER_HOST="unix://${XDG_RUNTIME_DIR}/podman/podman.sock"
 bindkey -e
 
