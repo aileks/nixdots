@@ -16,8 +16,8 @@ static const int systraypinningfailfirst = 1;      /* 1: if pinning fails, displ
 static const int showsystray             = 1;      /* 0 means no systray */
 static const int showbar                 = 1;      /* 0 means no bar */
 static const int topbar                  = 1;      /* 0 means bottom bar */
-static const int vertpad                 = 2;      /* vertical padding of bar */
-static const int sidepad                 = 4;      /* horizontal padding of bar */
+static const int vertpad                 = 0;      /* vertical padding of bar */
+static const int sidepad                 = 0;      /* horizontal padding of bar */
 static const int swallowfloating         = 0;      /* 1 means swallow floating windows by default */
 static const char *fonts[] = {
 	"Iosevka Custom:size=11",
@@ -131,6 +131,9 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,               XK_p,                       spawn,          {.v = powercmd} },
 	{ MODKEY|ControlMask,             XK_n,                       spawn,          {.v = nightcmd} },
 	{ MODKEY,                         XK_Escape,                  spawn,          {.v = lockcmd} },
+	{ MODKEY,                         XK_grave,                   togglescratch,  {0} },
+	{ MODKEY|ShiftMask,               XK_grave,                   setscratch,     {0} },
+	{ MODKEY|ControlMask,             XK_grave,                   releasescratch, {0} },
 	{ 0,                              XK_Print,                   spawn,          SHCMD("screenshot region") },
 	{ ControlMask,                    XK_Print,                   spawn,          SHCMD("screenshot window") },
 	{ ShiftMask,                      XK_Print,                   spawn,          SHCMD("screenshot full") },
@@ -154,8 +157,8 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,               XK_i,                       incnmaster,     {.i = -1} },
 	{ MODKEY|ShiftMask,               XK_Return,                  zoom,           {0} },
 	{ MODKEY,                         XK_Tab,                     view,           {0} },
-	{ MODKEY|ControlMask,             XK_g,                       togglegaps,     {0} },
-	{ MODKEY|ControlMask|ShiftMask,   XK_g,                       defaultgaps,    {0} },
+	// { MODKEY|ControlMask,             XK_g,                       togglegaps,     {0} },
+	// { MODKEY|ControlMask|ShiftMask,   XK_g,                       defaultgaps,    {0} },
 	{ MODKEY,                         XK_comma,                   focusmon,       {.i = -1} },
 	{ MODKEY,                         XK_period,                  focusmon,       {.i = +1} },
 	{ MODKEY|ShiftMask,               XK_comma,                   tagmon,         {.i = -1} },

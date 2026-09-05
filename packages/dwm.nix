@@ -100,6 +100,7 @@ in
       )}
       patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-6.6-fixups.diff}
       patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-themed-cursors.diff}
+      patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-scratchpad.diff}
       runHook postPatch
     '';
   })
