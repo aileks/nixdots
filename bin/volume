@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 set -Eeuo pipefail
 
 sink=@DEFAULT_AUDIO_SINK@

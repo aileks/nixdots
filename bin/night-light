@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 set -Eeuo pipefail
 
 state_file="${XDG_RUNTIME_DIR:-/run/user/$UID}/night-light-on"

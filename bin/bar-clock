@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 button="${BLOCK_BUTTON:-0}"
 state_file="${XDG_CACHE_HOME:-$HOME/.cache}/bar-clock-format"
 idx=0

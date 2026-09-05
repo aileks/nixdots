@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 set -Eeuo pipefail
 
 if ! pause_level=$(dunstctl get-pause-level); then

@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 set -euo pipefail
 
 # Stop on every lock so Picom is also absent when suspending an already locked session.
@@ -25,7 +24,7 @@ status=0
 wait "$locker_pid" || status=$?
 
 # Failed authentication keeps the locker running. Only a successful exit restores Picom.
-if (( status == 0 )) && "$restart_picom"; then
+if ((status == 0)) && "$restart_picom"; then
   systemctl --user start picom.service
 fi
 exit "$status"

@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 set -Eeuo pipefail
 
 videos_directory=$(xdg-user-dir VIDEOS 2>/dev/null || true)

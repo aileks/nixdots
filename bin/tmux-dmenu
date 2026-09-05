@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 # Adapted from https://github.com/tonybanters/dmenu-scripts/blob/master/tmux-dmenu.sh
 set -Eeuo pipefail
 
