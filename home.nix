@@ -133,6 +133,7 @@ in
         hunspellDicts.en_US
         (tesseract5.override { enableLanguages = [ "eng" ]; })
         tmux-sessionizer
+        easyeffects
         dunst
         feh
         numlockx
