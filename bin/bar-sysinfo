@@ -9,7 +9,24 @@ mem=$(free | awk '/^Mem/ { printf "%.0f", $3 / $2 * 100 }')
 temp=""
 for d in /sys/class/hwmon/hwmon*; do
   if [[ "$(cat "$d/name" 2>/dev/null)" == k10temp ]]; then
-    temp=$(awk '{ printf "%.0f", $1 / 1000 }' "$d/temp1_input")
+    inputs=()
+    fallback="$d/temp1_input"
+    for label in "$d"/temp*_label; do
+      [[ -r $label ]] || continue
+      input="${label%_label}_input"
+      [[ -r $input ]] || continue
+      case "$(cat "$label")" in
+        Tccd*) inputs+=("$input") ;;
+        Tdie) fallback="$input" ;;
+      esac
+    done
+    # Average the CPU chiplets; older CPUs may only expose Tdie or Tctl.
+    if ((${#inputs[@]} == 0)) && [[ -r $fallback ]]; then
+      inputs+=("$fallback")
+    fi
+    if ((${#inputs[@]} > 0)); then
+      temp=$(awk '{ sum += $1 } END { if (NR) printf "%.0f", sum / NR / 1000 }' "${inputs[@]}")
+    fi
     break
   fi
 done

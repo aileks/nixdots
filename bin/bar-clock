@@ -14,7 +14,7 @@ esac
 
 case "$idx" in
   1) fmt='%Y-%m-%d %H:%M' ;;
-  *) fmt='%a %d %b %H:%M' ;;
+  *) fmt='%a %b %d %H:%M' ;;
 esac
 
 printf '^c#BBB3A9^%s^d^' "$(date +"$fmt")"
