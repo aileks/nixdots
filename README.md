@@ -61,8 +61,8 @@ sudo ./bin/install --hostname your-hostname
 | `Mod + F`                                   | toggle fullscreen                     |
 | `Mod + Shift + Return`                      | move window to master                 |
 | `Mod + I` / `Mod + Shift + I`               | add or remove a master slot           |
-| `Mod + Shift + F`                           | monocle layout                        |
 | `Mod + Ctrl + J` / `Mod + Ctrl + K`         | grow or shrink a window (cfact patch) |
+| `Mod + H` / `Mod + L`                       | grow or shrink master horizontally    |
 | `Mod + Ctrl + Return`                       | reset window sizes                    |
 | `Mod + Ctrl + G` / `Mod + Ctrl + Shift + G` | toggle or reset gaps                  |
 
