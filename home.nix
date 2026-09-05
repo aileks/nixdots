@@ -21,6 +21,7 @@ let
     "fontconfig/fonts.conf" = "fontconfig/fonts.conf";
     "nvim" = "nvim";
     "qt6ct" = "qt6ct";
+    "rsync-home.excludes" = "rsync-home.excludes";
     "tmux" = "tmux";
     "starship.toml" = "starship/starship.toml";
   };

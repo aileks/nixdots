@@ -1,0 +1,97 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+umask 077
+
+user_name="$(id -un)"
+backup_label="${BACKUP_LABEL:-External}"
+backup_mount_base="${BACKUP_MOUNT_BASE:-/run/media/$user_name}"
+source_directory="$HOME/"
+external_mount="$backup_mount_base/$backup_label"
+backup_root="$external_mount/Backups/$(hostnamectl --static)"
+snapshots_directory="$backup_root/snapshots"
+latest_link="$backup_root/latest"
+logs_directory="$backup_root/logs"
+timestamp="$(date -u +%Y-%m-%dT%H%M%SZ)"
+new_snapshot="$snapshots_directory/$timestamp"
+incomplete_snapshot="$snapshots_directory/.$timestamp.incomplete"
+excludes="$HOME/.config/rsync-home.excludes"
+runtime_directory="${XDG_RUNTIME_DIR:-/run/user/$UID}"
+
+notify() {
+  desktop-feedback status "Home Backup: $*" >/dev/null 2>&1 || true
+}
+
+failed() {
+  status=$?
+  printf 'error: Home Backup failed (exit %s). Log: %s\n' \
+    "$status" "$logs_directory/$timestamp.log" >&2
+  notify "Backup failed (exit $status). Check journalctl --user -u home-backup."
+  exit "$status"
+}
+trap failed ERR
+
+exec 9>"$runtime_directory/home-backup.lock"
+if ! flock -n 9; then
+  printf 'home-backup is already running\n'
+  exit 0
+fi
+
+if ! mountpoint -q "$external_mount"; then
+  message="Backup mount not available: $external_mount"
+  notify "$message"
+  printf 'error: %s\n' "$message" >&2
+  exit 1
+fi
+
+if [[ ! -r $excludes ]]; then
+  notify "Missing exclude file: $excludes"
+  printf 'error: missing exclude file: %s\n' "$excludes" >&2
+  exit 1
+fi
+
+# Never reuse a snapshot directory: rsync could modify shared hard links.
+if [[ -e $new_snapshot || -L $new_snapshot ]]; then
+  printf 'error: snapshot already exists: %s\n' "$new_snapshot" >&2
+  exit 1
+fi
+mkdir -p "$snapshots_directory" "$logs_directory"
+mkdir "$incomplete_snapshot"
+notify "Backup starting..."
+
+previous_snapshot=""
+if [[ -L $latest_link ]]; then
+  previous_snapshot=$(readlink -f "$latest_link" || true)
+fi
+
+rsync_options=(
+  -aAXH --numeric-ids -x
+  --delete-delay --delete-excluded
+  --partial-dir=.rsync-partial
+  --info=progress2 --itemize-changes
+  --log-file="$logs_directory/$timestamp.log"
+  --exclude-from="$excludes"
+)
+
+if [[ -n $previous_snapshot && -d $previous_snapshot ]]; then
+  rsync_options+=(--link-dest="$previous_snapshot")
+fi
+
+rsync "${rsync_options[@]}" "$source_directory" "$incomplete_snapshot/"
+mv -T -- "$incomplete_snapshot" "$new_snapshot"
+ln -sfnT "$new_snapshot" "$latest_link"
+
+# rsync preserves the source directory's mtime, so order by timestamp names.
+mapfile -d '' -t snapshots < <(find "$snapshots_directory" -mindepth 1 -maxdepth 1 \
+  -type d -printf '%f\0' | LC_ALL=C sort -zr)
+completed_count=0
+for snapshot in "${snapshots[@]}"; do
+  [[ $snapshot =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}Z$ ]] || continue
+  completed_count=$((completed_count + 1))
+  if ((completed_count > 30)); then
+    rm -rf -- "${snapshots_directory:?}/$snapshot"
+  fi
+done
+
+printf 'Backup complete: %s\n' "$new_snapshot"
+notify "Backup complete"

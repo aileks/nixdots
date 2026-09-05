@@ -103,6 +103,7 @@
               lua
               nixfmt
               python3
+              rsync
               shellcheck
               shfmt
               stdenv.cc

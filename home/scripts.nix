@@ -52,6 +52,18 @@ let
     runtimeInputs = [ pkgs.dunst ];
     text = builtins.readFile ../bin/desktop-feedback;
   };
+  homeBackup = pkgs.writeShellApplication {
+    name = "home-backup";
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.coreutils
+      pkgs.findutils
+      pkgs.rsync
+      pkgs.systemd
+      pkgs.util-linux
+    ];
+    text = builtins.readFile ../bin/home-backup;
+  };
   tmuxDmenu = pkgs.writeShellApplication {
     name = "tmux-dmenu";
     runtimeInputs = [
@@ -153,6 +165,7 @@ in
     barClock
     powerMenu
     desktopFeedback
+    homeBackup
     tmuxDmenu
     nightLight
     volume
@@ -163,4 +176,23 @@ in
     screenshot
     recordMenu
   ];
+
+  systemd.user.services.home-backup = {
+    Unit.Description = "Back up home to the External drive";
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${homeBackup}/bin/home-backup";
+      TimeoutStartSec = "infinity";
+      UMask = "0077";
+    };
+  };
+
+  systemd.user.timers.home-backup = {
+    Unit.Description = "Daily home backup";
+    Timer = {
+      OnCalendar = "*-*-* 09:00:00";
+      Persistent = true;
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
 }
