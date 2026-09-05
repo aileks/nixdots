@@ -48,12 +48,12 @@ static const Rule rules[] = {
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	 */
-	/* class                     instance    title       tags mask     isfloating   isfullscreen   isterminal   noswallow   monitor */
-	{ "st-256color",             NULL,       NULL,       0,            0,           0,             1,           0,          0 },
-	{ "xdg-desktop-portal-gtk",  NULL,       NULL,       0,            1,           0,             0,           0,          -1 },
-	{ "Qalculate-gtk",           NULL,       NULL,       0,            1,           0,             0,           0,          -1 },
-	{ "polkit-gnome",            NULL,       NULL,       0,            1,           0,             0,           0,          -1 },
-	{ "nm-connection-editor",    NULL,       NULL,       0,            1,           0,             0,           0,          -1 },
+	/* class                     instance    title       tags mask     isfloating   isfullscreen   isterminal   noswallow   monitor   scratchkey */
+	{ "st-256color",             NULL,       NULL,       0,            0,           0,             1,           0,          0,        0 },
+	{ "xdg-desktop-portal-gtk",  NULL,       NULL,       0,            1,           0,             0,           0,          -1,       0 },
+	{ "Qalculate-gtk",           NULL,       NULL,       0,            1,           0,             0,           0,          -1,       0 },
+	{ "polkit-gnome",            NULL,       NULL,       0,            1,           0,             0,           0,          -1,       0 },
+	{ "nm-connection-editor",    NULL,       NULL,       0,            1,           0,             0,           0,          -1,       0 },
 };
 
 /* layout(s) */
@@ -91,6 +91,8 @@ static const Layout layouts[] = {
 static char dmenumon[2]            = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[]      = { "dmenu_run", NULL };
 static const char *termcmd[]       = { "st", NULL };
+/* Assignment key only: an empty scratchpad does not launch an application. */
+static const char *scratchpadcmd[] = { "s", NULL };
 static const char *tmuxcmd[]       = { "tmux-dmenu", NULL };
 static const char *browsercmd[]    = { "zen-browser-twilight", NULL };
 static const char *filescmd[]      = { "thunar", NULL };
@@ -131,9 +133,9 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,               XK_p,                       spawn,          {.v = powercmd} },
 	{ MODKEY|ControlMask,             XK_n,                       spawn,          {.v = nightcmd} },
 	{ MODKEY,                         XK_Escape,                  spawn,          {.v = lockcmd} },
-	{ MODKEY,                         XK_grave,                   togglescratch,  {0} },
-	{ MODKEY|ShiftMask,               XK_grave,                   setscratch,     {0} },
-	{ MODKEY|ControlMask,             XK_grave,                   releasescratch, {0} },
+	{ MODKEY,                         XK_grave,                   togglescratch,  {.v = scratchpadcmd} },
+	{ MODKEY|ShiftMask,               XK_grave,                   setscratch,     {.v = scratchpadcmd} },
+	{ MODKEY|ControlMask,             XK_grave,                   removescratch,  {.v = scratchpadcmd} },
 	{ 0,                              XK_Print,                   spawn,          SHCMD("screenshot region") },
 	{ ControlMask,                    XK_Print,                   spawn,          SHCMD("screenshot window") },
 	{ ShiftMask,                      XK_Print,                   spawn,          SHCMD("screenshot full") },

@@ -1,0 +1,151 @@
+--- a/dwm.c
++++ b/dwm.c
+@@ -115,6 +115,8 @@
+ 	unsigned int tags;
+ 	int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen, isterminal, noswallow;
+ 	pid_t pid;
++	char scratchkey;
++	int scratchwasfloating;
+ 	Client *next;
+ 	Client *snext;
+ 	Client *swallowing;
+@@ -233,6 +235,7 @@
+ static void quit(const Arg *arg);
+ static Monitor *recttomon(int x, int y, int w, int h);
+ static void removesystrayicon(Client *i);
++static void removescratch(const Arg *arg);
+ static void resize(Client *c, int x, int y, int w, int h, int interact);
+ static void resizebarwin(Monitor *m);
+ static void resizeclient(Client *c, int x, int y, int w, int h);
+@@ -263,6 +266,7 @@
+ static void togglebar(const Arg *arg);
+ static void togglefloating(const Arg *arg);
+ static void togglefullscr(const Arg *arg);
++static void togglescratch(const Arg *arg);
+ static void toggletag(const Arg *arg);
+ static void toggleview(const Arg *arg);
+ static void unfocus(Client *c, int setfocus);
+@@ -524,7 +528,7 @@
+ swallow(Client *p, Client *c)
+ {
+ 
+-	if (c->noswallow || c->isterminal)
++	if (p->scratchkey || c->scratchkey || c->noswallow || c->isterminal)
+ 		return;
+ 	if (!swallowfloating && c->isfloating)
+ 		return;
+@@ -1742,10 +1746,23 @@
+ void
+ removescratch(const Arg *arg)
+ {
+-	Client *c = selmon->sel;
+-	if (!c)
+-		return;
+-	c->scratchkey = 0;
++	Client *c;
++	Monitor *m;
++
++	/* Release the single assignment, even when it is hidden or on another monitor. */
++	for (m = mons; m; m = m->next)
++		for (c = m->clients; c; c = c->next) {
++			if (c->scratchkey != ((char **)arg->v)[0][0])
++				continue;
++			if (c->mon != selmon || !ISVISIBLE(c))
++				togglescratch(arg);
++			setfullscreen(c, 0);
++			c->scratchkey = 0;
++			c->isfloating = c->scratchwasfloating;
++			focus(c);
++			arrange(c->mon);
++			return;
++		}
+ }
+ 
+ void
+@@ -2067,10 +2084,19 @@
+ setscratch(const Arg *arg)
+ {
+ 	Client *c = selmon->sel;
++
+ 	if (!c)
+ 		return;
+-
++	setfullscreen(c, 0);
++	if (!c->scratchkey) {
++		removescratch(arg);
++		c->scratchwasfloating = c->isfloating;
++	}
+ 	c->scratchkey = ((char**)arg->v)[0][0];
++	c->isfloating = 1;
++	c->tags = 0;
++	focus(NULL);
++	arrange(c->mon);
+ }
+ 
+ void
+@@ -2293,7 +2319,7 @@
+ void
+ togglefloating(const Arg *arg)
+ {
+-	if (!selmon->sel)
++	if (!selmon->sel || selmon->sel->scratchkey)
+ 		return;
+ 	if (selmon->sel->isfullscreen) /* no support for fullscreen windows */
+ 		return;
+@@ -2359,6 +2385,7 @@
+ 			if (!found || (mon == selmon && c->mon != selmon))
+ 				found = c;
+ 
++			setfullscreen(c, 0);
+ 			unfocus(c, 0); // unfocus to avoid client border discrepancies
+ 
+ 			/* If scratchpad clients reside on another monitor and we are moving them across then
+@@ -2403,16 +2430,15 @@
+ 
+ 		/* Center floating scratchpad windows when moved from one monitor to another */
+ 		if (c->isfloating) {
+-			if (c->w > selmon->ww)
++			if (WIDTH(c) > selmon->ww)
+ 				c->w = selmon->ww - c->bw * 2;
+-			if (c->h > selmon->wh)
++			if (HEIGHT(c) > selmon->wh)
+ 				c->h = selmon->wh - c->bw * 2;
+ 
+ 			if (numscratchpads > 1) {
+ 				c->x = c->mon->wx + (c->x - mon->wx) * ((double)(abs(c->mon->ww - WIDTH(c))) / MAX(abs(mon->ww - WIDTH(c)), 1));
+ 				c->y = c->mon->wy + (c->y - mon->wy) * ((double)(abs(c->mon->wh - HEIGHT(c))) / MAX(abs(mon->wh - HEIGHT(c)), 1));
+-			} else if (c->x < c->mon->mx || c->x > c->mon->mx + c->mon->mw ||
+-			           c->y < c->mon->my || c->y > c->mon->my + c->mon->mh)	{
++			} else {
+ 				c->x = c->mon->wx + (c->mon->ww / 2 - WIDTH(c) / 2);
+ 				c->y = c->mon->wy + (c->mon->wh / 2 - HEIGHT(c) / 2);
+ 			}
+@@ -2426,7 +2452,7 @@
+ 		arrange(NULL);
+ 		if (found->isfloating)
+ 			XRaiseWindow(dpy, found->win);
+-	} else {
++	} else if (((char * const *)arg->v)[1]) {
+ 		spawn(&(Arg){ .v = (const void *)(((char * const *)arg->v) + 1) });
+ 	}
+ }
+@@ -2501,6 +2527,11 @@
+ 	Monitor *m = c->mon;
+ 	XWindowChanges wc;
+ 
++	if (c->scratchkey) {
++		c->scratchkey = 0;
++		c->isfloating = c->scratchwasfloating;
++		c->tags = m->tagset[m->seltags];
++	}
+ 	if (c->swallowing) {
+ 		unswallow(c);
+ 		return;
+@@ -3217,6 +3248,7 @@
+ #endif /* __OpenBSD__ */
+ 	scan();
+ 	run();
++	removescratch(&(Arg){ .v = scratchpadcmd });
+ 	if(restart) execvp(argv[0], argv);
+ 	cleanup();
+ 	XCloseDisplay(dpy);

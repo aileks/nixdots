@@ -54,6 +54,10 @@ let
     upstreamPatch "dwm-statuscmd-status2d"
       "https://dwm.suckless.org/patches/statuscmd/dwm-statuscmd-status2d-20210405-60bb3df.diff"
       "sha256-d7kkM6o+K9KbpEyTkdyJZRBHhN4Lb7cLX3JFb4q+zs4=";
+  renamedScratchpads =
+    upstreamPatch "dwm-renamedscratchpads"
+      "https://raw.githubusercontent.com/bakkeby/patches/d99bbe2c7a3a9d01a3b934219c1b785b38518d84/dwm/dwm-renamedscratchpads_noscheme-6.6.diff"
+      "sha256-UI8Bj1c5xBjuob6Nk5OM45PjAyQiniQ4v6JgMmRtmQM=";
 in
 (dwm.override {
   conf = ../config/dwm/config.def.h;
@@ -100,7 +104,17 @@ in
       )}
       patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-6.6-fixups.diff}
       patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-themed-cursors.diff}
-      patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-scratchpad.diff}
+      ${applyPatch (
+        renamedScratchpads
+        // {
+          fuzz = 2;
+          # Two config hunks, Client/prototype overlaps, and one blank line.
+          expectedFailedHunks = 6;
+        }
+      )}
+      # Integrate declarations and preserve single-window assignment, release,
+      # fullscreen, swallowing, and restart behavior around the upstream toggle.
+      patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-renamedscratchpads-fixups.diff}
       runHook postPatch
     '';
   })
