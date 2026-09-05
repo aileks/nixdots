@@ -123,6 +123,7 @@ in
         };
         output = {
           mode = "type";
+          driver_order = [ "ydotool" ];
           fallback_to_clipboard = true;
           notification = {
             on_recording_start = false;
