@@ -33,9 +33,10 @@ let
       systemd
     ];
     text = ''
-      choice=$(printf '%s\n' "log out" "reboot" "shut down" | dmenu -p power)
+      choice=$(printf '%s\n' "log out" "suspend" "reboot" "shut down" | dmenu -p power)
       case "$choice" in
         "log out") pkill dwm ;;
+        "suspend") systemctl suspend ;;
         "reboot") systemctl reboot ;;
         "shut down") systemctl poweroff ;;
       esac
