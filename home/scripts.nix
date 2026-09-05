@@ -47,6 +47,18 @@ let
     runtimeInputs = [ pkgs.dunst ];
     text = builtins.readFile ../bin/desktop-feedback;
   };
+  tmuxDmenu = pkgs.writeShellApplication {
+    name = "tmux-dmenu";
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.coreutils
+      pkgs.dmenu
+      pkgs.findutils
+      pkgs.st
+      pkgs.tmux
+    ];
+    text = builtins.readFile ../bin/tmux-dmenu;
+  };
   nightLight = pkgs.writeShellApplication {
     name = "night-light";
     runtimeInputs = [
@@ -135,6 +147,7 @@ in
     barClock
     powerMenu
     desktopFeedback
+    tmuxDmenu
     nightLight
     volume
     brightness

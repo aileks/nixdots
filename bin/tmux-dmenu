@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+
+# Adapted from https://github.com/tonybanters/dmenu-scripts/blob/master/tmux-dmenu.sh
+set -Eeuo pipefail
+
+trap 'desktop-feedback status "tmux: could not open session" >&2 || true' ERR
+
+repositories=("$HOME/.dotfiles")
+for root in "$HOME/Documents" "$HOME/Projects"; do
+  [[ -d $root ]] || continue
+  while IFS= read -r -d '' git_path; do
+    repositories+=("${git_path%/.git}")
+  done < <(find "$root" -name .git -prune -print0 | sort -z)
+done
+
+menu=('Create new session…')
+for repository in "${repositories[@]}"; do
+  menu+=("repo: ~/${repository#"$HOME/"}")
+done
+while IFS= read -r session; do
+  menu+=("session: $session")
+done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null || true)
+
+choice=$(printf '%s\n' "${menu[@]}" | dmenu -i -p 'tmux:') || exit 0
+[[ -n $choice ]] || exit 0
+
+directory=$HOME
+create=0
+if [[ $choice == 'Create new session…' ]]; then
+  session=$(dmenu -p 'New session name:' </dev/null) || exit 0
+  [[ -n $session ]] || exit 0
+  # tmux replaces dots and colons in new names, which would break exact lookup.
+  if [[ $session == *[.:]* ]]; then
+    desktop-feedback status 'tmux: session names cannot contain dots or colons'
+    exit 1
+  fi
+
+  create=1
+elif [[ $choice == 'repo: '* ]]; then
+  directory=${choice#'repo: ~/'}
+  directory="$HOME/$directory"
+  # Only accept a repository offered by the menu.
+  found=0
+  for repository in "${repositories[@]}"; do
+    [[ $directory == "$repository" ]] && found=1 && break
+  done
+  ((found)) || exit 0
+  # Keep the relative path so identically named repos in different roots differ.
+  session=${directory#"$HOME/"}
+  session=${session//[.:]/_}
+  create=1
+elif [[ $choice == 'session: '* ]]; then
+  session=${choice#'session: '}
+else
+  exit 0
+fi
+
+if ((create)); then
+  if ! tmux has-session -t "=$session" 2>/dev/null; then
+    tmux new-session -d -s "$session" -c "$directory"
+  fi
+else
+  if ! tmux has-session -t "=$session" 2>/dev/null; then
+    desktop-feedback status "tmux: session does not exist: $session"
+    exit 1
+  fi
+fi
+
+if [[ -n ${TMUX-} ]]; then
+  tmux switch-client -t "=$session"
+else
+  st -e tmux attach-session -t "=$session"
+fi

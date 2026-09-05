@@ -91,6 +91,7 @@ static const Layout layouts[] = {
 static char dmenumon[2]            = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[]      = { "dmenu_run", NULL };
 static const char *termcmd[]       = { "st", NULL };
+static const char *tmuxcmd[]       = { "tmux-dmenu", NULL };
 static const char *browsercmd[]    = { "zen-browser-twilight", NULL };
 static const char *filescmd[]      = { "thunar", NULL };
 static const char *signalcmd[]     = { "signal-desktop", NULL };
@@ -117,6 +118,7 @@ static Key keys[] = {
 	/* modifier                       key                         function        argument */
 	{ MODKEY,                         XK_space,                   spawn,          {.v = dmenucmd} },
 	{ MODKEY,                         XK_Return,                  spawn,          {.v = termcmd} },
+	{ MODKEY,                         XK_t,                       spawn,          {.v = tmuxcmd} },
 	{ MODKEY,                         XK_w,                       spawn,          {.v = browsercmd} },
 	{ MODKEY,                         XK_e,                       spawn,          {.v = filescmd} },
 	{ MODKEY,                         XK_s,                       spawn,          {.v = signalcmd} },
@@ -152,8 +154,6 @@ static Key keys[] = {
 	{ MODKEY|ShiftMask,               XK_i,                       incnmaster,     {.i = -1} },
 	{ MODKEY|ShiftMask,               XK_Return,                  zoom,           {0} },
 	{ MODKEY,                         XK_Tab,                     view,           {0} },
-	{ MODKEY,                         XK_t,                       setlayout,      {.v = &layouts[0]} },
-	{ MODKEY|ShiftMask,               XK_f,                       setlayout,      {.v = &layouts[2]} },
 	{ MODKEY|ControlMask,             XK_g,                       togglegaps,     {0} },
 	{ MODKEY|ControlMask|ShiftMask,   XK_g,                       defaultgaps,    {0} },
 	{ MODKEY,                         XK_comma,                   focusmon,       {.i = -1} },
