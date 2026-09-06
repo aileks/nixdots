@@ -1,4 +1,5 @@
 [global]
+dmenu = dmenu -i -p notification
 monitor = 0
 follow = none
 width = 380
@@ -46,3 +47,8 @@ highlight = "#E17A3F"
 timeout = 2
 history_ignore = yes
 override_pause_level = 100
+
+[reminder]
+appname = reminder
+markup = no
+timeout = 0

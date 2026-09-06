@@ -1,0 +1,68 @@
+set -Eeuo pipefail
+umask 077
+directory="${XDG_RUNTIME_DIR:?}/private-clipboard"
+unit=private-clipboard.service
+mkdir -p "$directory"
+
+case ${1:-} in
+  put)
+    exec 9>"$directory.lock"
+    flock 9
+    if systemctl --user is-active --quiet "$unit"; then
+      desktop-feedback status "Private clipboard is in use; replace it or wait 60 seconds"
+      exit 1
+    fi
+    if systemctl --user is-active --quiet clipmenud.service; then
+      touch "$directory/restore-history"
+    else
+      rm -f "$directory/restore-history"
+    fi
+    cat >"$directory/payload"
+    if [[ ! -s $directory/payload ]]; then
+      rm -f "$directory/payload" "$directory/restore-history"
+      exit 1
+    fi
+    if ! systemctl --user start "$unit"; then
+      rm -f "$directory/payload"
+      desktop-feedback status "Private clipboard failed"
+      exit 1
+    fi
+    ;;
+  serve)
+    # Conflicts/ordering stops history capture before this process starts.
+    xclip -quiet -selection clipboard -i "$directory/payload" >/dev/null 2>&1 &
+    owner_pid=$!
+    trap 'kill "$owner_pid" 2>/dev/null || true; wait "$owner_pid" 2>/dev/null || true' EXIT
+    trap 'exit 0' TERM INT HUP
+    ready=false
+    for _ in {1..20}; do
+      kill -0 "$owner_pid" 2>/dev/null || break
+      if timeout 0.2 xclip -selection clipboard -o 2>/dev/null | cmp -s - "$directory/payload"; then
+        ready=true
+        break
+      fi
+      sleep 0.05
+    done
+    rm -f "$directory/payload"
+    if ! "$ready"; then
+      desktop-feedback status "Private clipboard failed"
+      exit 1
+    fi
+    desktop-feedback status "QR copied privately for 60 seconds"
+    wait "$owner_pid"
+    ;;
+  restore)
+    rm -f "$directory/payload"
+    if [[ -f $directory/restore-history ]]; then
+      rm -f "$directory/restore-history"
+      if systemctl --user is-active --quiet graphical-session.target; then
+        # Do not wait on a service ordered after our own shutdown.
+        systemctl --user start --no-block clipmenud.service
+      fi
+    fi
+    ;;
+  *)
+    printf 'usage: private-clipboard put|serve|restore\n' >&2
+    exit 2
+    ;;
+esac

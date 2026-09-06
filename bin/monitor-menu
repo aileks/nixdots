@@ -1,0 +1,13 @@
+set -Eeuo pipefail
+profiles=$(autorandr --list)
+selected=$(printf 'Automatic\n%s\n' "$profiles" | dmenu -i -p displays) || exit 0
+if [[ $selected == Automatic ]]; then
+  args=(--change)
+elif grep -Fxq -- "$selected" <<<"$profiles"; then
+  args=(--load "$selected")
+else
+  exit 0
+fi
+if ! autorandr "${args[@]}"; then
+  desktop-feedback status "Display layout could not be applied"
+fi

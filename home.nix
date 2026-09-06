@@ -179,10 +179,6 @@ in
     "XDG_CURRENT_DESKTOP"
     "QT_QPA_PLATFORMTHEME"
   ];
-  xsession.initExtra = ''
-    pkill -x xss-lock 2>/dev/null || true
-    ${pkgs.xss-lock}/bin/xss-lock -l ${lib.getExe lockSession} &
-  '';
 
   xresources.properties."Xft.dpi" = 96;
 
@@ -258,6 +254,28 @@ in
   };
 
   services = {
+    screen-locker = {
+      enable = true;
+      lockCmd = lib.getExe lockSession;
+      inactiveInterval = 10;
+      xss-lock.extraOptions = [ "--transfer-sleep-lock" ];
+      xss-lock.screensaverCycle = 5;
+    };
+    xsettingsd = {
+      enable = true;
+      settings = {
+        "Net/ThemeName" = config.gtk.theme.name;
+        "Net/IconThemeName" = config.gtk.iconTheme.name;
+        "Gtk/FontName" = "${config.gtk.font.name} ${toString config.gtk.font.size}";
+        "Gtk/CursorThemeName" = config.gtk.cursorTheme.name;
+        "Gtk/CursorThemeSize" = config.gtk.cursorTheme.size;
+        "Xft/DPI" = config.xresources.properties."Xft.dpi" * 1024;
+        "Xft/Antialias" = 1;
+        "Xft/Hinting" = 1;
+        "Xft/HintStyle" = "hintslight";
+        "Xft/RGBA" = "rgb";
+      };
+    };
     udiskie = {
       enable = true;
       automount = true;
@@ -266,28 +284,25 @@ in
     };
     picom = {
       enable = true;
-      backend = "glx";
-      vSync = true;
-      fade = true;
-      activeOpacity = 1.0;
-      inactiveOpacity = 0.95;
-      shadow = true;
-      settings = {
+      # The module otherwise emits legacy options that conflict with rules.
+      settings = lib.mkForce {
+        backend = "glx";
+        vsync = true;
+        fading = true;
+        fade-delta = 10;
+        fade-in-step = 0.028;
+        fade-out-step = 0.03;
+        shadow = true;
+        shadow-offset-x = -15;
+        shadow-offset-y = -15;
+        shadow-opacity = 0.75;
         use-damage = false;
         blur = {
           method = "dual_kawase";
           strength = 5;
         };
-        blur-background-exclude = [
-          "window_type = 'dock'"
-          "window_type = 'desktop'"
-          "window_type = 'menu'"
-          "window_type = 'dropdown_menu'"
-          "window_type = 'popup_menu'"
-          "_GTK_FRAME_EXTENTS@:c"
-          "class_g = 'slop'"
-        ];
       };
+      extraConfig = builtins.readFile ./config/picom-rules.conf;
     };
   };
 
@@ -321,6 +336,7 @@ in
       };
       Service = {
         ExecStart = "${pkgs.dunst}/bin/dunst";
+        Environment = [ "PATH=${xsessionPath}" ];
         Restart = "on-failure";
         RestartSec = 2;
       };
@@ -365,22 +381,25 @@ in
       };
       Service = {
         ExecStart = "${pkgs.clipmenu}/bin/clipmenud";
-        Environment = [ "PATH=${lib.makeBinPath [ pkgs.xsel ]}:${xsessionPath}" ];
+        Environment = [
+          "PATH=${lib.makeBinPath [ pkgs.xsel ]}:${xsessionPath}"
+          "CM_MAX_CLIPS=50"
+        ];
         Restart = "on-failure";
         RestartSec = 2;
       };
       Install.WantedBy = [ graphicalSessionTarget ];
     };
 
-    xidle-suspend = {
+    xssproxy = {
       Unit = {
-        Description = "Suspend after 30 minutes of inactivity";
+        Description = "Forward application screensaver inhibitors to X11";
         ConditionEnvironment = "DISPLAY";
         PartOf = [ graphicalSessionTarget ];
         After = [ graphicalSessionTarget ];
       };
       Service = {
-        ExecStart = "${pkgs.xautolock}/bin/xautolock -time 30 -detectsleep -locker '${pkgs.systemd}/bin/systemctl suspend'";
+        ExecStart = lib.getExe pkgs.xssproxy;
         Restart = "on-failure";
         RestartSec = 2;
       };

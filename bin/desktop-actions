@@ -1,0 +1,12 @@
+set -Eeuo pipefail
+choice=$(printf '%s\n' 'OCR' 'Scan QR' 'Reminders' 'Notification History' \
+  'Network Settings' 'Quick Calculate' 'Displays' | dmenu -i -p actions) || exit 0
+case "$choice" in
+  'OCR') exec region-ocr ;;
+  'Scan QR') exec qr-scan ;;
+  'Reminders') exec reminder ;;
+  'Notification History') exec notification-history ;;
+  'Network Settings') exec networkmanager_dmenu ;;
+  'Quick Calculate') exec calculate ;;
+  'Displays') exec monitor-menu ;;
+esac

@@ -1,4 +1,9 @@
-{ config, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 
 let
   barDnd = pkgs.writeShellApplication {
@@ -122,7 +127,10 @@ let
   };
   screenrecord = pkgs.writeShellApplication {
     name = "screenrecord";
-    runtimeInputs = with pkgs; [
+    runtimeInputs = [
+      recordingInhibit
+    ]
+    ++ (with pkgs; [
       coreutils
       gawk
       gpu-screen-recorder
@@ -132,8 +140,17 @@ let
       xdg-user-dirs
       xdotool
       xrandr
-    ];
+    ]);
     text = builtins.readFile ../bin/screenrecord;
+  };
+  recordingInhibit = pkgs.writeShellApplication {
+    name = "recording-inhibit";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.systemd
+      pkgs.xset
+    ];
+    text = builtins.readFile ../bin/recording-inhibit;
   };
   screenshot = pkgs.writeShellApplication {
     name = "screenshot";
@@ -156,6 +173,111 @@ let
     ];
     text = builtins.readFile ../bin/record-menu;
   };
+  privateClipboard = pkgs.writeShellApplication {
+    name = "private-clipboard";
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.coreutils
+      pkgs.systemd
+      pkgs.util-linux
+      pkgs.xclip
+      pkgs.diffutils
+    ];
+    text = builtins.readFile ../bin/private-clipboard;
+  };
+  regionOcr = pkgs.writeShellApplication {
+    name = "region-ocr";
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.coreutils
+      pkgs.gnugrep
+      pkgs.slop
+      pkgs.maim
+      pkgs.xclip
+      (pkgs.tesseract5.override { enableLanguages = [ "eng" ]; })
+    ];
+    text = builtins.readFile ../bin/region-ocr;
+  };
+  qrScan = pkgs.writeShellApplication {
+    name = "qr-scan";
+    runtimeInputs = [
+      desktopFeedback
+      privateClipboard
+      pkgs.coreutils
+      pkgs.diffutils
+      pkgs.glibc.bin
+      pkgs.slop
+      pkgs.maim
+      pkgs.zbar
+      pkgs.xmlstarlet
+    ];
+    text = builtins.readFile ../bin/qr-scan;
+  };
+  reminder = pkgs.writeShellApplication {
+    name = "reminder";
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.coreutils
+      pkgs.dmenu
+      pkgs.dunst
+      pkgs.gnugrep
+      pkgs.jq
+      pkgs.util-linux
+    ];
+    text = builtins.readFile ../bin/reminder;
+  };
+  notificationHistory = pkgs.writeShellApplication {
+    name = "notification-history";
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.dunst
+      pkgs.jq
+      pkgs.dmenu
+      pkgs.gnugrep
+    ];
+    text = builtins.readFile ../bin/notification-history;
+  };
+  calculate = pkgs.writeShellApplication {
+    name = "calculate";
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.coreutils
+      pkgs.dmenu
+      pkgs.libqalculate
+      pkgs.xclip
+    ];
+    text = builtins.readFile ../bin/calculate;
+  };
+  monitorMenu = pkgs.writeShellApplication {
+    name = "monitor-menu";
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.autorandr
+      pkgs.dmenu
+      pkgs.gnugrep
+    ];
+    text = builtins.readFile ../bin/monitor-menu;
+  };
+  desktopActions = pkgs.writeShellApplication {
+    name = "desktop-actions";
+    runtimeInputs = [
+      regionOcr
+      qrScan
+      reminder
+      notificationHistory
+      calculate
+      monitorMenu
+      nightLight
+      powerMenu
+      pkgs.dmenu
+      pkgs.dunst
+      pkgs.networkmanager_dmenu
+      pkgs.clipmenu
+      pkgs.st
+      pkgs.wiremix
+    ];
+    text = builtins.readFile ../bin/desktop-actions;
+  };
 in
 {
   home.packages = [
@@ -175,7 +297,70 @@ in
     screenrecord
     screenshot
     recordMenu
+    regionOcr
+    qrScan
+    reminder
+    notificationHistory
+    calculate
+    monitorMenu
+    desktopActions
   ];
+
+  xdg.configFile."networkmanager-dmenu/config.ini".text = ''
+    [dmenu]
+    dmenu_command = ${pkgs.dmenu}/bin/dmenu -i
+    pinentry = ${pkgs.pinentry-gtk2}/bin/pinentry-gtk-2
+    prompt = Networks
+    [editor]
+    terminal = ${pkgs.st}/bin/st
+    gui_if_available = True
+    gui = ${pkgs.networkmanagerapplet}/bin/nm-connection-editor
+  '';
+
+  systemd.user.services.private-clipboard = {
+    Unit = {
+      Description = "Temporary private QR clipboard";
+      PartOf = [ "graphical-session.target" ];
+      Conflicts = [ "clipmenud.service" ];
+      Before = [ "clipmenud.service" ];
+      ConditionEnvironment = "DISPLAY";
+    };
+    Service = {
+      ExecStart = "${pkgs.coreutils}/bin/timeout --foreground --kill-after=2s 60s ${lib.getExe privateClipboard} serve";
+      ExecStopPost = "${lib.getExe privateClipboard} restore";
+      SuccessExitStatus = [ 124 ];
+      TimeoutStopSec = 2;
+      UMask = "0077";
+    };
+  };
+
+  systemd.user.services.reminders = {
+    Unit = {
+      Description = "Deliver due reminders";
+      PartOf = [ "graphical-session.target" ];
+      After = [
+        "graphical-session.target"
+        "dunst.service"
+      ];
+      Requisite = [ "graphical-session.target" ];
+      ConditionEnvironment = "DISPLAY";
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${lib.getExe reminder} dispatch";
+      UMask = "0077";
+    };
+  };
+  systemd.user.timers.reminders = {
+    Unit.PartOf = [ "graphical-session.target" ];
+    Timer = {
+      OnCalendar = "*-*-* *:*:00";
+      OnActiveSec = "5s";
+      AccuracySec = "1s";
+      Persistent = true;
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
 
   systemd.user.services.home-backup = {
     Unit.Description = "Back up home to the External drive";

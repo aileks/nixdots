@@ -93,7 +93,6 @@ static const Layout layouts[] = {
 static char dmenumon[2]            = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[]      = { "dmenu_run", NULL };
 static const char *termcmd[]       = { "st", NULL };
-/* Assignment key only: an empty scratchpad does not launch an application. */
 static const char *scratchpadcmd[] = { "s", NULL };
 static const char *tmuxcmd[]       = { "tmux-dmenu", NULL };
 static const char *browsercmd[]    = { "zen-browser-twilight", NULL };
@@ -103,10 +102,7 @@ static const char *mailcmd[]       = { "fastmail", NULL };
 static const char *lockcmd[]       = { "loginctl", "lock-session", NULL };
 static const char *emoticmd[]      = { "bemoji", "-n", NULL };
 static const char *clipcmd[]       = { "clipmenu", "-p", "clip", NULL };
-static const char *nightcmd[]      = { "night-light", NULL };
 static const char *pickercmd[]     = { "sh", "-c", "xcolor | xclip -selection clipboard", NULL };
-static const char *powercmd[]      = { "power-menu", NULL };
-static const char *recordmenucmd[] = { "record-menu", NULL };
 static const char *audiocmd[]      = { "st", "-e", "wiremix", NULL };
 
 static const char *volupcmd[]      = { "volume", "up", NULL };
@@ -132,18 +128,25 @@ static Key keys[] = {
 	{ MODKEY,                         XK_v,                       spawn,          {.v = clipcmd} },
 	{ MODKEY,                         XK_n,                       spawn,          {.v = dndcmd} },
 	{ MODKEY,                         XK_semicolon,               spawn,          {.v = emoticmd} },
-	{ MODKEY|ShiftMask,               XK_p,                       spawn,          {.v = powercmd} },
-	{ MODKEY|ControlMask,             XK_n,                       spawn,          {.v = nightcmd} },
 	{ MODKEY,                         XK_Escape,                  spawn,          {.v = lockcmd} },
 	{ MODKEY,                         XK_grave,                   togglescratch,  {.v = scratchpadcmd} },
 	{ MODKEY|ShiftMask,               XK_grave,                   setscratch,     {.v = scratchpadcmd} },
 	{ MODKEY|ControlMask,             XK_grave,                   removescratch,  {.v = scratchpadcmd} },
+	{ MODKEY|ControlMask,             XK_n,                       spawn,          SHCMD("night-light") },
+	{ MODKEY|ShiftMask,               XK_p,                       spawn,          SHCMD("power-menu") },
+	{ MODKEY,                         XK_r,                       spawn,          SHCMD("record-menu") },
 	{ 0,                              XK_Print,                   spawn,          SHCMD("screenshot region") },
 	{ ControlMask,                    XK_Print,                   spawn,          SHCMD("screenshot window") },
 	{ ShiftMask,                      XK_Print,                   spawn,          SHCMD("screenshot full") },
 	{ MODKEY,                         XK_Print,                   spawn,          SHCMD("screenrecord region") },
 	{ MODKEY|ShiftMask,               XK_Print,                   spawn,          SHCMD("screenrecord output") },
-	{ MODKEY,                         XK_r,                       spawn,          {.v = recordmenucmd} },
+	{ MODKEY|ControlMask,             XK_space,                   spawn,          SHCMD("desktop-actions") },
+	{ MODKEY|ShiftMask,               XK_o,                       spawn,          SHCMD("region-ocr") },
+	{ MODKEY|ControlMask,             XK_o,                       spawn,          SHCMD("qr-scan") },
+	{ MODKEY|ControlMask,             XK_r,                       spawn,          SHCMD("reminder") },
+	{ MODKEY,                         XK_equal,                   spawn,          SHCMD("calculate") },
+	{ MODKEY|ShiftMask,               XK_n,                       spawn,          SHCMD("notification-history") },
+	{ MODKEY|ControlMask|ShiftMask,   XK_n,                       spawn,          SHCMD("dunstctl context") },
 	{ MODKEY,                         XK_q,                       killclient,     {0} },
 	{ MODKEY,                         XK_f,                       togglefullscr,  {0} },
 	{ MODKEY,                         XK_b,                       togglebar,      {0} },
@@ -167,14 +170,14 @@ static Key keys[] = {
 	{ MODKEY,                         XK_period,                  focusmon,       {.i = +1} },
 	{ MODKEY|ShiftMask,               XK_comma,                   tagmon,         {.i = -1} },
 	{ MODKEY|ShiftMask,               XK_period,                  tagmon,         {.i = +1} },
-	{ 0,                              XF86XK_AudioRaiseVolume,    spawn,          {.v = volupcmd} },
-	{ 0,                              XF86XK_AudioLowerVolume,    spawn,          {.v = voldowncmd} },
-	{ 0,                              XF86XK_AudioMute,           spawn,          {.v = volmutecmd} },
-	{ 0,                              XF86XK_AudioMicMute,        spawn,          {.v = micmutecmd} },
 	{ 0,                              XF86XK_AudioPlay,           spawn,          SHCMD("playerctl play-pause") },
 	{ 0,                              XF86XK_AudioPause,          spawn,          SHCMD("playerctl play-pause") },
 	{ 0,                              XF86XK_AudioNext,           spawn,          SHCMD("playerctl next") },
 	{ 0,                              XF86XK_AudioPrev,           spawn,          SHCMD("playerctl previous") },
+	{ 0,                              XF86XK_AudioRaiseVolume,    spawn,          {.v = volupcmd} },
+	{ 0,                              XF86XK_AudioLowerVolume,    spawn,          {.v = voldowncmd} },
+	{ 0,                              XF86XK_AudioMute,           spawn,          {.v = volmutecmd} },
+	{ 0,                              XF86XK_AudioMicMute,        spawn,          {.v = micmutecmd} },
 	{ 0,                              XF86XK_MonBrightnessUp,     spawn,          {.v = brightupcmd} },
 	{ 0,                              XF86XK_MonBrightnessDown,   spawn,          {.v = brightdowncmd} },
 	{ MODKEY|ShiftMask,               XK_q,                       quit,           {0} },

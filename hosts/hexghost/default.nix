@@ -8,6 +8,19 @@
 }:
 
 let
+  monitorEdids = builtins.fromJSON (builtins.readFile ./monitor-edids.json);
+  mainDisplay = {
+    mode = "2560x1440";
+    rate = "200.00";
+    primary = true;
+    position = "0x0";
+  };
+  portraitDisplay = {
+    mode = "1920x1080";
+    rate = "200.00";
+    rotate = "left";
+    position = "0x0";
+  };
   nvidiaDriver = config.boot.kernelPackages.nvidiaPackages.mkDriver {
     version = "610.57.04";
     sha256_64bit = "sha256-suk1xmuDuwDAyFe8jg7g/VLekoa0DJzB7sKafOfrEW0=";
@@ -41,9 +54,50 @@ in
       Option "HardDPMS" "false"
     '';
     displayManager.sessionCommands = lib.mkBefore ''
-      ${pkgs.xrandr}/bin/xrandr --output DP-0 --primary --mode 2560x1440 --rate 200.00 --pos 1080x240 \
-        --output HDMI-0 --mode 1920x1080 --rate 200.00 --rotate left --pos 0x0 || true
+      ${pkgs.autorandr}/bin/autorandr --change
     '';
+  };
+
+  services.autorandr = {
+    enable = true;
+    profiles = {
+      desktop = {
+        fingerprint = monitorEdids;
+        config = {
+          DP-0 = mainDisplay // {
+            position = "1080x240";
+          };
+          HDMI-0 = portraitDisplay;
+        };
+      };
+      main = {
+        fingerprint = { inherit (monitorEdids) DP-0; };
+        config = {
+          DP-0 = mainDisplay;
+          HDMI-0.enable = false;
+        };
+      };
+      portrait = {
+        fingerprint = { inherit (monitorEdids) HDMI-0; };
+        config = {
+          HDMI-0 = portraitDisplay // {
+            primary = true;
+          };
+          DP-0.enable = false;
+        };
+      };
+    };
+    hooks.postswitch.desktop = ''
+      if ${pkgs.systemd}/bin/systemctl --user is-active --quiet graphical-session.target; then
+        ${pkgs.systemd}/bin/systemctl --user start wallpaper.service
+        /etc/profiles/per-user/${installation.user.name}/bin/night-light apply
+      fi
+    '';
+  };
+  # The upstream NixOS hook is attached to sleep.target, before actual suspend.
+  systemd.services.autorandr = {
+    wantedBy = lib.mkForce [ "suspend.target" ];
+    after = [ "systemd-suspend.service" ];
   };
 
   services.udev.extraRules = ''
@@ -80,6 +134,12 @@ in
   home-manager.backupFileExtension = "backup";
 
   home-manager.users.${installation.user.name} = {
+    xdg.configFile."autostart/autorandr.desktop".text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=autorandr
+      Hidden=true
+    '';
     imports = [
       inputs.voxtype.homeManagerModules.default
     ];

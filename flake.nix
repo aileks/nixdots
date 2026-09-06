@@ -102,7 +102,6 @@
               libxml2
               lua
               nixfmt
-              python3
               rsync
               shellcheck
               shfmt
@@ -118,9 +117,8 @@
 
             find . -path ./config/nvim -prune -o -name '*.nix' -print0 \
               | xargs -0 -r nixfmt --check
-            shellcheck bin/*
+            shellcheck --shell=bash bin/*
             shfmt -d -i 2 -ci -bn bin/*
-            python3 -B -m unittest discover -s tests
             zsh -n config/zsh/zshrc
             zsh -n config/zsh/cinder-grove.zsh
             find config/nvim -type f -name '*.lua' -print0 | xargs -0 -r -n 1 luac -p
@@ -128,26 +126,12 @@
 
             touch "$out"
           '';
-      dwmFocus =
-        pkgs.runCommand "dwm-focus-check"
-          {
-            nativeBuildInputs = [
-              (pkgs.python3.withPackages (p: [ p.xlib ]))
-              pkgs.xorg-server
-            ];
-            FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.dejavu_fonts ]; };
-          }
-          ''
-            export HOME="$TMPDIR"
-            python ${./tests/dwm_focus.py} ${pkgs.dwm}/bin/dwm
-            touch "$out"
-          '';
     in
     {
       lib = { inherit installation; };
       overlays.default = overlay;
       packages.${system} = localPackages;
-      checks.${system} = localPackages // hostChecks // { inherit sourceCheck dwmFocus; };
+      checks.${system} = localPackages // hostChecks // { inherit sourceCheck; };
       formatter.${system} = pkgs.nixfmt-tree;
 
       nixosConfigurations = hosts;

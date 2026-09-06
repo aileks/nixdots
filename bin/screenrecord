@@ -154,6 +154,19 @@ if ! start_time=$(awk '{ print $22 }' "/proc/$pid/stat" 2>/dev/null); then
     "gpu-screen-recorder exited with status ${status:-0}."
   exit 1
 fi
+coproc inhibitor { exec recording-inhibit "$pid" "$start_time" 9>&-; }
+inhibitor_fd=${inhibitor[0]:-}
+inhibitor_pid=${inhibitor_PID:-}
+if [[ -z $inhibitor_fd ]] || ! read -r -t 5 ready <&"$inhibitor_fd" || [[ $ready != READY ]]; then
+  if [[ -n $inhibitor_pid ]]; then
+    kill "$inhibitor_pid" 2>/dev/null || true
+    wait "$inhibitor_pid" 2>/dev/null || true
+  fi
+  kill -INT "$pid" 2>/dev/null || true
+  wait "$pid" || true
+  notify-send -u critical -a Recording "Recording failed" "Could not prevent automatic locking while recording."
+  exit 1
+fi
 statefile_tmp="$statefile.tmp.$pid"
 printf '%s\n%s\n%s\n' "$pid" "$start_time" "$file" >"$statefile_tmp"
 mv "$statefile_tmp" "$statefile"

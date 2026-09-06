@@ -96,18 +96,30 @@
   security.rtkit.enable = true;
   security.pam.services.xsecurelock = { };
 
+  services.logind.settings.Login = {
+    IdleAction = "suspend";
+    # xss-lock reports idle after the ten-minute screen saver timeout.
+    IdleActionSec = "20min";
+  };
+
   services.xserver = {
     enable = true;
-    xkb.options = "terminate:ctrl_alt_bksp";
+    xkb = {
+      layout = "aileks";
+      options = "terminate:ctrl_alt_bksp";
+      extraLayouts.aileks = {
+        description = "US with Caps Lock and right Control swapped";
+        languages = [ "eng" ];
+        symbolsFile = ../config/xorg/keymap.xkb;
+      };
+    };
     windowManager.dwm = {
       enable = true;
       package = pkgs.dwm;
     };
     displayManager.sessionCommands = ''
       ${pkgs.gnome-keyring}/bin/gnome-keyring-daemon --start --components=secrets || true
-      ${pkgs.xkbcomp}/bin/xkbcomp ${../config/xorg/keymap.xkb} "$DISPLAY"
       ${pkgs.xset}/bin/xset r rate 250 50
-      ${pkgs.xset}/bin/xset s 600 5
       ${pkgs.xset}/bin/xset dpms 660 660 660
     '';
   };

@@ -1,0 +1,57 @@
+set -Eeuo pipefail
+umask 077
+directory=$(mktemp -d "${XDG_RUNTIME_DIR:?}/qr-scan.XXXXXXXX")
+trap 'rm -rf -- "$directory"' EXIT
+trap 'exit 130' INT TERM HUP
+
+if ! geometry=$(slop -f '%wx%h+%x+%y' 2>"$directory/error"); then
+  [[ ! -s $directory/error ]] || desktop-feedback status "Region selection failed"
+  exit 0
+fi
+if ! maim -g "$geometry" "$directory/image.png" 2>"$directory/error"; then
+  desktop-feedback status "QR capture failed"
+  exit 1
+fi
+status=0
+zbarimg --quiet --xml -Sdisable -Sqrcode.enable "$directory/image.png" \
+  >"$directory/codes.xml" 2>"$directory/error" || status=$?
+if ((status == 4)); then
+  desktop-feedback status "No QR code found"
+  exit 0
+elif ((status != 0)); then
+  desktop-feedback status "QR decoding failed"
+  exit 1
+fi
+symbol="//*[local-name()='symbol'][@type='QR-Code']"
+if ! count=$(xmlstarlet sel -t -v "count($symbol)" "$directory/codes.xml" 2>/dev/null) || [[ $count != 1 ]]; then
+  desktop-feedback status "Select exactly one QR code"
+  exit 1
+fi
+node="$symbol/*[local-name()='data']"
+if ! format=$(xmlstarlet sel -t -v "concat('format:', string($node/@format))" "$directory/codes.xml" 2>/dev/null) \
+  || ! xmlstarlet sel -T -t -v "string($node)" "$directory/codes.xml" >"$directory/payload" 2>/dev/null; then
+  desktop-feedback status "QR decoding failed"
+  exit 1
+fi
+case ${format#format:} in
+  '') cp "$directory/payload" "$directory/text" ;;
+  base64)
+    if ! base64 -d <"$directory/payload" >"$directory/text" 2>/dev/null; then
+      desktop-feedback status "QR decoding failed"
+      exit 1
+    fi
+    ;;
+  *)
+    desktop-feedback status "QR code is not supported text"
+    exit 1
+    ;;
+esac
+# Keep bytes in files: Bash variables cannot preserve embedded NUL characters.
+tr -d '\000' <"$directory/text" >"$directory/without-nul"
+if [[ ! -s $directory/text ]] \
+  || ! iconv -f UTF-8 -t UTF-8 "$directory/text" >/dev/null 2>&1 \
+  || ! cmp -s "$directory/without-nul" "$directory/text"; then
+  desktop-feedback status "QR code is not supported text"
+  exit 1
+fi
+private-clipboard put <"$directory/text"

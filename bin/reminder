@@ -1,0 +1,123 @@
+set -Eeuo pipefail
+umask 077
+directory="${XDG_STATE_HOME:-$HOME/.local/state}/reminders"
+state="$directory/pending.json"
+temporary=$(mktemp -d "${XDG_RUNTIME_DIR:?}/reminder.XXXXXXXX")
+pending=
+trap 'rm -rf -- "$temporary"; [[ -z $pending ]] || rm -f -- "$pending"' EXIT
+trap 'exit 130' INT TERM HUP
+trap 'desktop-feedback status "Reminder operation failed; check input and state directory"; exit 1' ERR
+mkdir -p "$directory"
+exec 9>"$directory/lock"
+
+read_records() {
+  records='[]'
+  [[ -f $state ]] || return 0
+  records=$(jq -ce 'if type == "array" and all(.[];
+    (.id | type == "string" and test("^[a-f0-9]{32}$")) and
+    (.due | type == "number" and . == floor and . >= 0 and . <= 253402300799) and
+    (.message | type == "string")) then . else error("Invalid reminder state") end' "$state" 2>/dev/null)
+}
+
+save_records() {
+  pending=$(mktemp "$directory/.pending-XXXXXXXX")
+  printf '%s\n' "$records" >"$pending"
+  sync -f "$pending"
+  mv -- "$pending" "$state"
+  pending=
+  sync -f "$directory"
+}
+
+prompt() {
+  if ! answer=$(dmenu -i -p "$1" 2>"$temporary/menu-error"); then
+    [[ ! -s $temporary/menu-error ]] || desktop-feedback status "Reminder menu failed"
+    exit 0
+  fi
+}
+
+command=${1:-}
+if [[ -z $command ]]; then
+  prompt reminders <<<$'Create\nList\nCancel'
+  command=$answer
+fi
+case ${command,,} in
+  '') exit 0 ;;
+  create)
+    prompt 'duration (10m, 2h, 1d)' </dev/null
+    [[ -n $answer ]] || exit 0
+    if [[ ! $answer =~ ^([1-9][0-9]{0,7})([mhd])$ ]]; then
+      desktop-feedback status "Use a whole-number duration such as 10m, 2h, or 1d"
+      exit 1
+    fi
+    amount=${BASH_REMATCH[1]}
+    case ${BASH_REMATCH[2]} in
+      m) seconds=$((amount * 60)) ;;
+      h) seconds=$((amount * 3600)) ;;
+      d) seconds=$((amount * 86400)) ;;
+    esac
+    due=$(($(date +%s) + seconds))
+    if ((due > 253402300799)); then
+      desktop-feedback status "Reminder duration is too long"
+      exit 1
+    fi
+    deadline=$(date -d "@$due" '+%Y-%m-%d %H:%M')
+    prompt reminder </dev/null
+    [[ $answer =~ [^[:space:]] ]] || exit 0
+    identifier=$(tr -d '-' </proc/sys/kernel/random/uuid)
+    flock 9
+    read_records
+    records=$(jq -c --arg id "$identifier" --argjson due "$due" --arg message "$answer" \
+      '. + [{id: $id, due: $due, message: $message}]' <<<"$records")
+    save_records
+    flock -u 9
+    desktop-feedback status "Reminder set for $deadline"
+    ;;
+  list | cancel)
+    flock 9
+    read_records
+    flock -u 9
+    if [[ $records == '[]' ]]; then
+      desktop-feedback status "No pending reminders"
+      exit 0
+    fi
+    rows=$(jq -r 'sort_by(.due)[] | .id + "  " +
+      (.due | localtime | strftime("%Y-%m-%d %H:%M")) + "  " +
+      (.message | gsub("[\\r\\n\\t]"; " "))' <<<"$records")
+    prompt "${command,,} reminders" <<<"$rows"
+    [[ ${command,,} == cancel ]] || exit 0
+    grep -Fxq -- "$answer" <<<"$rows" || exit 0
+    identifier=${answer%% *}
+    flock 9
+    read_records
+    remaining=$(jq -c --arg id "$identifier" 'map(select(.id != $id))' <<<"$records")
+    if [[ $remaining == "$records" ]]; then
+      desktop-feedback status "Reminder already delivered"
+      exit 0
+    fi
+    records=$remaining
+    save_records
+    flock -u 9
+    desktop-feedback status "Reminder cancelled"
+    ;;
+  dispatch)
+    flock 9
+    read_records
+    now=$(date +%s)
+    while read -r identifier; do
+      paused=$(timeout 5 dunstctl get-pause-level 2>/dev/null) || exit 0
+      [[ $paused == 0 ]] || exit 0
+      # A sentinel keeps trailing newlines intact through command substitution.
+      message=$(jq -r --arg id "$identifier" '.[] | select(.id == $id) | .message + "\u0001"' <<<"$records")
+      message=${message%$'\001'}
+      timeout 5 dunstify -a reminder -u normal -t 0 \
+        -h "string:x-dunst-stack-tag:reminder-$identifier" \
+        -- Reminder "$message" >/dev/null 2>&1 || exit 0
+      records=$(jq -c --arg id "$identifier" 'map(select(.id != $id))' <<<"$records")
+      save_records
+    done < <(jq -r --argjson now "$now" 'sort_by(.due)[] | select(.due <= $now) | .id' <<<"$records")
+    ;;
+  *)
+    printf 'usage: reminder [create|list|cancel]\n' >&2
+    exit 2
+    ;;
+esac
