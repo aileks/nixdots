@@ -189,9 +189,9 @@ in
   gtk = {
     enable = true;
     font = {
-      name = "Iosevka Nerd Font";
+      name = "Adwaita Sans";
       size = 11;
-      package = pkgs.nerd-fonts.iosevka;
+      package = pkgs.adwaita-fonts;
     };
     theme = {
       name = "Cinder-Grove-Dark";
@@ -224,7 +224,7 @@ in
       icon-theme = "Papirus-Dark";
       cursor-theme = "Adwaita";
       cursor-size = 24;
-      font-name = lib.mkForce "Iosevka Nerd Font 11";
+      font-name = lib.mkForce "Adwaita Sans 11";
       monospace-font-name = "Iosevka Nerd Font 11";
       font-antialiasing = "rgba";
       font-hinting = "slight";

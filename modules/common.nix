@@ -166,6 +166,7 @@
   };
 
   fonts.packages = with pkgs; [
+    adwaita-fonts
     nerd-fonts.iosevka
     nerd-fonts.iosevka-term
     noto-fonts
