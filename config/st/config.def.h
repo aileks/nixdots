@@ -6,9 +6,6 @@
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
 static char *font = "IosevkaTerm Nerd Font:size=14";
-/* Spare fonts */
-static char *font2[] = {
-};
 
 static int borderpx = 4;
 

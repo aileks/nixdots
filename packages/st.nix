@@ -39,10 +39,6 @@ let
       "sha256-foKCxYE58T+7GsPRB7ALNzDWCNTvlIsLPojoi0OOeaY="
       0
     )
-    (upstreamPatch "st-font2" "https://st.suckless.org/patches/font2/st-font2-0.8.5.diff"
-      "sha256-tSMk5c5Hz6/dv3tcyh+0R91Vy1jgU52Y1sjqy2o08x4="
-      0
-    )
     (upstreamPatch "st-anysize"
       "https://st.suckless.org/patches/anysize/st-anysize-20220718-baa9357.diff"
       "sha256-yx9VSwmPACx3EN3CAdQkxeoJKJxQ6ziC9tpBcoWuWHc="
