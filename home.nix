@@ -134,6 +134,7 @@ in
         hunspellDicts.en_US
         (tesseract5.override { enableLanguages = [ "eng" ]; })
         tmux-sessionizer
+        anki
         easyeffects
         dunst
         feh
