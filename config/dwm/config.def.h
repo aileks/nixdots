@@ -20,7 +20,7 @@ static const int vertpad                 = 0;      /* vertical padding of bar */
 static const int sidepad                 = 0;      /* horizontal padding of bar */
 static const int swallowfloating         = 0;      /* 1 means swallow floating windows by default */
 static const char *fonts[] = {
-	"Iosevka Nerd Font:size=11",
+	"Iosevka Nerd Font:style=Medium:size=11",
 };
 
 /* cinder grove palette */
@@ -110,7 +110,6 @@ static const char *volmutecmd[]    = { "volume", "mute", NULL };
 static const char *micmutecmd[]    = { "microphone-mute", NULL };
 static const char *brightupcmd[]   = { "brightness", "up", NULL };
 static const char *brightdowncmd[] = { "brightness", "down", NULL };
-static const char *dndcmd[]        = { "dnd-toggle", NULL };
 
 #include <X11/XF86keysym.h>
 static Key keys[] = {
@@ -125,12 +124,12 @@ static Key keys[] = {
 	{ MODKEY,                         XK_m,                       spawn,          {.v = mailcmd} },
 	{ MODKEY,                         XK_o,                       spawn,          {.v = pickercmd} },
 	{ MODKEY,                         XK_v,                       spawn,          {.v = clipcmd} },
-	{ MODKEY,                         XK_n,                       spawn,          {.v = dndcmd} },
 	{ MODKEY,                         XK_semicolon,               spawn,          {.v = emoticmd} },
 	{ MODKEY,                         XK_Escape,                  spawn,          {.v = lockcmd} },
 	{ MODKEY,                         XK_grave,                   togglescratch,  {.v = scratchpadcmd} },
 	{ MODKEY|ShiftMask,               XK_grave,                   setscratch,     {.v = scratchpadcmd} },
 	{ MODKEY|ControlMask,             XK_grave,                   removescratch,  {.v = scratchpadcmd} },
+	{ MODKEY,                         XK_n,                       spawn,          SHCMD("dnd-toggle") }, 
 	{ MODKEY|ControlMask,             XK_n,                       spawn,          SHCMD("night-light") },
 	{ MODKEY|ShiftMask,               XK_p,                       spawn,          SHCMD("power-menu") },
 	{ MODKEY,                         XK_r,                       spawn,          SHCMD("record-menu") },
