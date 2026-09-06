@@ -43,7 +43,10 @@ let
   };
 in
 {
-  imports = [ ./home/scripts.nix ];
+  imports = [
+    ./home/scripts.nix
+    ./home/lf.nix
+  ];
 
   home = {
     username = installation.user.name;
