@@ -36,7 +36,6 @@
         "cinder-grove-gtk"
         "papirus-cinder-grove"
         "fastmail-desktop"
-        "iosevka-custom"
       ];
       overlay = final: prev: {
         dwm = import ./packages/dwm.nix {
@@ -60,7 +59,6 @@
         cinder-grove-gtk = final.callPackage ./packages/cinder-grove-gtk.nix { };
         papirus-cinder-grove = final.callPackage ./packages/papirus-cinder-grove.nix { };
         fastmail-desktop = final.callPackage ./packages/fastmail-desktop.nix { };
-        iosevka-custom = final.callPackage ./packages/iosevka-custom.nix { };
       };
       pkgs = import nixpkgs {
         inherit system;

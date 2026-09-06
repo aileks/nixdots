@@ -166,9 +166,8 @@
   };
 
   fonts.packages = with pkgs; [
-    adwaita-fonts
-    iosevka-custom
-    pkgs.nerd-fonts.symbols-only
+    nerd-fonts.iosevka
+    nerd-fonts.iosevka-term
     noto-fonts
     noto-fonts-cjk-sans
     noto-fonts-cjk-serif

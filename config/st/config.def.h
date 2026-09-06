@@ -5,10 +5,9 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "Iosevka Custom:size=14";
+static char *font = "IosevkaTerm Nerd Font:size=14";
 /* Spare fonts */
 static char *font2[] = {
-    "Symbols Nerd Font:size=12",
 };
 
 static int borderpx = 4;

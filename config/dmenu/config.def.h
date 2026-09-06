@@ -12,8 +12,7 @@ static int max_width = 960; /* maximum width when centered */
 static const float menu_height_ratio =
     4.0f; /* This is the ratio used in the original calculation */
 /* -fn option overrides fonts[0]; default X11 font or font set */
-static const char *fonts[] = {"Iosevka Custom:size=16",
-                              "Symbols Nerd Font:size=14"};
+static const char *fonts[] = {"Iosevka Nerd Font:size=16"};
 static const char *prompt = "run";
 static const char *colors[SchemeLast][2] = {
     /*     fg         bg       */

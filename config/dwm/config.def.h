@@ -20,8 +20,7 @@ static const int vertpad                 = 0;      /* vertical padding of bar */
 static const int sidepad                 = 0;      /* horizontal padding of bar */
 static const int swallowfloating         = 0;      /* 1 means swallow floating windows by default */
 static const char *fonts[] = {
-	"Iosevka Custom:size=11",
-	"Symbols Nerd Font:size=10",
+	"Iosevka Nerd Font:size=11",
 };
 
 /* cinder grove palette */
