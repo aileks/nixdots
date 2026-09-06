@@ -8,12 +8,25 @@
 let
   lf = lib.getExe config.programs.lf.package;
   file = lib.getExe pkgs.file;
+  batThemeCache = pkgs.runCommand "lf-bat-theme-cache" { nativeBuildInputs = [ pkgs.bat ]; } ''
+    mkdir -p themes
+    cp ${../config/bat/themes/cinder-grove.tmTheme} themes/cinder-grove.tmTheme
+    bat cache --build --source . --target "$out"
+  '';
+  textPreview = pkgs.writeShellApplication {
+    name = "lf-text-preview";
+    runtimeInputs = [ pkgs.bat ];
+    text = ''
+      export BAT_CACHE_PATH=${batThemeCache}
+      export COLORTERM=truecolor
+      bat --no-config --theme=cinder-grove --color=always --style=plain \
+        --paging=never --wrap=never --line-range "1:''${3:-40}" -- "$1"
+    '';
+  };
   preview = pkgs.writeShellApplication {
     name = "lf-preview";
     runtimeInputs = [ pkgs.coreutils ];
     text = ''
-      export PISTOL_CHROMA_STYLE=monokai
-      export PISTOL_CHROMA_FORMATTER=terminal16m
       height=''${3:-40}
       status=0
       timeout --kill-after=1s 3s ${lib.getExe config.programs.pistol.package} \
@@ -49,6 +62,10 @@ in
   programs.pistol = {
     enable = true;
     associations = [
+      {
+        mime = "^(text/.*|application/(json|.*\\+json|javascript|xml|.*\\+xml|x-shellscript)|inode/x-empty)$";
+        command = "${lib.getExe textPreview} %pistol-filename% %pistol-extra0% %pistol-extra1%";
+      }
       {
         mime = "^application/pdf$";
         command = "${pkgs.poppler-utils}/bin/pdftotext -f 1 -l 5 -layout %pistol-filename% -";

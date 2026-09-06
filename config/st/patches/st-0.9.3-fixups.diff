@@ -329,11 +329,11 @@
 +	}
 +
 +	if (dmode & DRAW_FG) {
-+		/* Set the clip region because Xft is sometimes dirty. */
-+		r.x = 0;
++		/* Clip to the text row so wide glyphs can cross style-run boundaries. */
++		r.x = win.hborderpx - winx;
 +		r.y = 0;
 +		r.height = win.ch;
-+		r.width = width;
++		r.width = win.tw;
 +		XftDrawSetClipRectangles(xw.draw, winx, winy, &r, 1);
  
 -	if (base.mode & ATTR_BOXDRAW) {
