@@ -81,4 +81,12 @@ in
       patch -p1 --batch --forward --fuzz=0 < ${../config/st/patches/st-0.9.3-fixups.diff}
       runHook postPatch
     '';
+    doCheck = true;
+    checkPhase = ''
+      runHook preCheck
+      $CC -D_XOPEN_SOURCE=600 -I. -ffunction-sections -fdata-sections \
+        ${../config/st/sgr-test.c} -Wl,--gc-sections -o sgr-test
+      ./sgr-test
+      runHook postCheck
+    '';
   })

@@ -423,7 +423,185 @@
  
 --- a/st.c
 +++ b/st.c
-@@ -1941,12 +1941,6 @@
+@@ -36,7 +36,7 @@
+ #define UTF_SIZ       4
+ #define ESC_BUF_SIZ   (128*UTF_SIZ)
+ #define ESC_ARG_SIZ   16
+-#define CAR_PER_ARG   4
++#define CAR_PER_ARG   5
+ #define STR_BUF_SIZ   ESC_BUF_SIZ
+ #define STR_ARG_SIZ   ESC_ARG_SIZ
+ 
+@@ -144,6 +144,7 @@
+ 	int narg;              /* nb of args */
+ 	char mode[2];
+ 	int carg[ESC_ARG_SIZ][CAR_PER_ARG]; /* colon args */
++	int ncarg[ESC_ARG_SIZ];
+ } CSIEscape;
+ 
+ /* STR Escape sequence structs */
+@@ -165,7 +166,7 @@
+ 
+ static void csidump(void);
+ static void csihandle(void);
+-static void readcolonargs(char **, int, int[][CAR_PER_ARG]);
++static int readcolonargs(char **, int, int[][CAR_PER_ARG]);
+ static void csiparse(void);
+ static void csireset(void);
+ static void osc_color_response(int, int, int);
+@@ -1600,26 +1601,31 @@
+ 	tmoveto(first_col ? 0 : term.c.x, y);
+ }
+ 
+-void
++int
+ readcolonargs(char **p, int cursor, int params[][CAR_PER_ARG])
+ {
+ 	int i = 0;
++	char *np;
++	long value;
++
+ 	for (; i < CAR_PER_ARG; i++)
+ 		params[cursor][i] = -1;
+ 
+-	if (**p != ':')
+-		return;
+-
+-	char *np = NULL;
+ 	i = 0;
+-
+-	while (**p == ':' && i < CAR_PER_ARG) {
+-		while (**p == ':')
+-			(*p)++;
+-		params[cursor][i] = strtol(*p, &np, 10);
++	while (**p == ':') {
++		(*p)++;
++		errno = 0;
++		value = strtol(*p, &np, 10);
++		if (np == *p)
++			value = -1;
++		else if (errno == ERANGE || value < 0 || value > INT_MAX)
++			value = -2;
++		if (i < CAR_PER_ARG)
++			params[cursor][i] = value;
+ 		*p = np;
+ 		i++;
+ 	}
++	return i;
+ }
+ 
+ void
+@@ -1627,7 +1633,6 @@
+ {
+ 	char *p = csiescseq.buf, *np;
+ 	long int v;
+-	int sep = ';'; /* colon or semi-colon, but not both */
+ 
+ 	csiescseq.narg = 0;
+ 	if (*p == '?') {
+@@ -1641,14 +1646,13 @@
+ 		v = strtol(p, &np, 10);
+ 		if (np == p)
+ 			v = 0;
+-		if (v == LONG_MAX || v == LONG_MIN)
++		if (v > INT_MAX || v < 0)
+ 			v = -1;
+ 		csiescseq.arg[csiescseq.narg++] = v;
+-		readcolonargs(&p, csiescseq.narg-1, csiescseq.carg);
+ 		p = np;
+-		if (sep == ';' && *p == ':')
+-			sep = ':'; /* allow override to colon once */
+-		if (*p != sep || csiescseq.narg == ESC_ARG_SIZ)
++		csiescseq.ncarg[csiescseq.narg-1] =
++			readcolonargs(&p, csiescseq.narg-1, csiescseq.carg);
++		if (*p != ';' || csiescseq.narg == ESC_ARG_SIZ)
+ 			break;
+ 		p++;
+ 	}
+@@ -1800,51 +1804,38 @@
+ int32_t
+ tdefcolor(const int *attr, int *npar, int l)
+ {
+-	int32_t idx = -1;
+-	uint r, g, b;
+-
+-	switch (attr[*npar + 1]) {
+-	case 2: /* direct color in RGB space */
+-		if (*npar + 4 >= l) {
+-			fprintf(stderr,
+-				"erresc(38): Incorrect number of parameters (%d)\n",
+-				*npar);
+-			break;
+-		}
+-		r = attr[*npar + 2];
+-		g = attr[*npar + 3];
+-		b = attr[*npar + 4];
+-		*npar += 4;
+-		if (!BETWEEN(r, 0, 255) || !BETWEEN(g, 0, 255) || !BETWEEN(b, 0, 255))
+-			fprintf(stderr, "erresc: bad rgb color (%u,%u,%u)\n",
+-				r, g, b);
+-		else
+-			idx = TRUECOLOR(r, g, b);
+-		break;
+-	case 5: /* indexed color */
+-		if (*npar + 2 >= l) {
+-			fprintf(stderr,
+-				"erresc(38): Incorrect number of parameters (%d)\n",
+-				*npar);
+-			break;
+-		}
+-		*npar += 2;
+-		if (!BETWEEN(attr[*npar], 0, 255))
+-			fprintf(stderr, "erresc: bad fgcolor %d\n", attr[*npar]);
+-		else
+-			idx = attr[*npar];
+-		break;
+-	case 0: /* implemented defined (only foreground) */
+-	case 1: /* transparent */
+-	case 3: /* direct color in CMY space */
+-	case 4: /* direct color in CMYK space */
++	int colon = csiescseq.ncarg[*npar];
++	const int *values = colon ? csiescseq.carg[*npar] : attr + *npar + 1;
++	int count = colon ? colon : l - *npar - 1;
++	int offset = 1;
++
++	switch (count ? values[0] : -1) {
++	case 2: /* RGB, with an optional colon-separated color-space field. */
++		if (!colon)
++			*npar += MIN(count, 4);
++		if (colon == 5) {
++			if (values[1] != -1 && values[1] != 0)
++				return -1;
++			offset = 2;
++		} else if (colon && colon != 4) {
++			return -1;
++		}
++		if (count < offset + 3 || !BETWEEN(values[offset], 0, 255) ||
++		    !BETWEEN(values[offset+1], 0, 255) || !BETWEEN(values[offset+2], 0, 255))
++			return -1;
++		return TRUECOLOR(values[offset], values[offset+1], values[offset+2]);
++	case 5: /* Indexed color. */
++		if (!colon)
++			*npar += MIN(count, 2);
++		if ((colon && colon != 2) || count < 2 || !BETWEEN(values[1], 0, 255))
++			return -1;
++		return values[1];
+ 	default:
+-		fprintf(stderr,
+-		        "erresc(38): gfx attr %d unknown\n", attr[*npar]);
+-		break;
+-	}
+-
+-	return idx;
++		/* An unknown semicolon color has no reliable parameter boundary. */
++		if (!colon)
++			*npar = l - 1;
++		return -1;
++	}
+ }
+ 
+ void
+@@ -1941,16 +1932,12 @@
  			term.c.attr.bg = defaultbg;
  			break;
  		case 58:
@@ -433,10 +611,20 @@
 -			tdefcolor(attr, &i, l);
 -			break;
 -		case 58:
- 			term.c.attr.ucolor[0] = csiescseq.carg[i][1];
- 			term.c.attr.ucolor[1] = csiescseq.carg[i][2];
- 			term.c.attr.ucolor[2] = csiescseq.carg[i][3];
-@@ -3308,7 +3302,8 @@
+-			term.c.attr.ucolor[0] = csiescseq.carg[i][1];
+-			term.c.attr.ucolor[1] = csiescseq.carg[i][2];
+-			term.c.attr.ucolor[2] = csiescseq.carg[i][3];
+-			term.c.attr.mode ^= ATTR_DIRTYUNDERLINE;
++			if ((idx = tdefcolor(attr, &i, l)) >= 0) {
++				term.c.attr.ucolor[0] = IS_TRUECOL(idx) ? (idx >> 16) & 255 : idx;
++				term.c.attr.ucolor[1] = IS_TRUECOL(idx) ? (idx >> 8) & 255 : -1;
++				term.c.attr.ucolor[2] = IS_TRUECOL(idx) ? idx & 255 : -1;
++				term.c.attr.mode ^= ATTR_DIRTYUNDERLINE;
++			}
+ 			break;
+ 		case 59:
+ 			term.c.attr.ucolor[0] = -1;
+@@ -3308,7 +3295,8 @@
  	drawregion(0, 0, term.col, term.row);
  	if (sb.view_offset == 0) {
  		xdrawcursor(cx, term.c.y, term.line[term.c.y][cx],
