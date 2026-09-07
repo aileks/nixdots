@@ -36,6 +36,7 @@
         "cinder-grove-gtk"
         "papirus-cinder-grove"
         "fastmail-desktop"
+        "nvidia-vaapi-driver"
       ];
       overlay = final: prev: {
         dwm = import ./packages/dwm.nix {
@@ -59,6 +60,20 @@
         cinder-grove-gtk = final.callPackage ./packages/cinder-grove-gtk.nix { };
         papirus-cinder-grove = final.callPackage ./packages/papirus-cinder-grove.nix { };
         fastmail-desktop = final.callPackage ./packages/fastmail-desktop.nix { };
+        nvidia-vaapi-driver = prev.nvidia-vaapi-driver.overrideAttrs (
+          finalAttrs: previousAttrs: {
+            version = "0.0.18";
+            src = prev.fetchFromGitHub {
+              owner = "elFarto";
+              repo = "nvidia-vaapi-driver";
+              rev = "v${finalAttrs.version}";
+              hash = "sha256-cEEPRKoWtNXk8LsDbkhNjnIY7UD1rfYbv2Q6ThG0YLg=";
+            };
+            meta = previousAttrs.meta // {
+              changelog = "https://github.com/elFarto/nvidia-vaapi-driver/releases/tag/v${finalAttrs.version}";
+            };
+          }
+        );
       };
       pkgs = import nixpkgs {
         inherit system;
