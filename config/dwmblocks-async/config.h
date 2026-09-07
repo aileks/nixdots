@@ -20,7 +20,7 @@
 #define BLOCKS(X)                                                              \
     X("", "bar-dnd", 1, 0)                                                     \
     X("  ", "bar-volume", 2, 10)                                            \
-    X("  ", "bar-sysinfo", 10, 3)                                           \
+    X("  ", "bar-sysinfo", 10, 3)                                           \
     X("  ", "bar-clock", 1, 4)
 
 #endif // CONFIG_H
