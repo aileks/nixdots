@@ -462,28 +462,33 @@ in
       notify = true;
       tray = "auto";
     };
-    picom = {
-      enable = true;
-      # The module otherwise emits legacy options that conflict with rules.
-      settings = lib.mkForce {
+    picom =
+      let
+        effectExclusions = [
+          "window_type = 'desktop' || window_type = 'dock' || window_type = 'menu' || window_type = 'dropdown_menu' || window_type = 'popup_menu' || window_type = 'tooltip' || window_type = 'combo' || window_type = 'dnd' || window_type = 'notification'"
+          "(class_g = 'zen-twilight' && window_type = 'utility' && role = 'Popup') || class_g = 'slop' || class_g = 'voxtype-osd-gtk4' || class_g = 'Dunst'"
+        ];
+      in
+      {
+        enable = true;
         backend = "glx";
-        vsync = true;
-        fading = true;
-        fade-delta = 10;
-        fade-in-step = 0.028;
-        fade-out-step = 0.03;
+        vSync = true;
+        fade = true;
+        activeOpacity = 1.0;
+        inactiveOpacity = 0.95;
         shadow = true;
-        shadow-offset-x = -15;
-        shadow-offset-y = -15;
-        shadow-opacity = 0.75;
-        use-damage = false;
-        blur = {
-          method = "dual_kawase";
-          strength = 5;
+        shadowExclude = effectExclusions ++ [ "_GTK_FRAME_EXTENTS@" ];
+        fadeExclude = effectExclusions;
+        opacityRules = map (condition: "100:${condition}") effectExclusions;
+        settings = {
+          use-damage = false;
+          blur = {
+            method = "dual_kawase";
+            strength = 5;
+          };
+          blur-background-exclude = config.services.picom.shadowExclude;
         };
       };
-      extraConfig = builtins.readFile ./config/picom-rules.conf;
-    };
   };
 
   systemd.user.services = {
