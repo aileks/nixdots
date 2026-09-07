@@ -172,6 +172,10 @@ in
       QT_QPA_PLATFORMTHEME = "qt6ct";
       XCURSOR_THEME = "Adwaita";
       XCURSOR_SIZE = 24;
+      LIBVA_DRIVER_NAME = "nvidia";
+      NVD_BACKEND = "direct";
+      MOZ_DISABLE_RDD_SANDBOX = 1;
+      MOZ_X11_EGL = 1;
     };
   };
 
@@ -225,7 +229,7 @@ in
       cursor-theme = "Adwaita";
       cursor-size = 24;
       font-name = lib.mkForce "Adwaita Sans 11";
-      monospace-font-name = "Iosevka Nerd Font 11";
+      monospace-font-name = "Iosevka Nerd Font 12";
       font-antialiasing = "rgba";
       font-hinting = "slight";
       font-rgba-order = "rgb";

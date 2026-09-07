@@ -106,6 +106,7 @@ in
 
   hardware.nvidia = {
     modesetting.enable = true;
+    videoAcceleration = true;
     open = true;
     package = nvidiaDriver;
     nvidiaSettings = true;
