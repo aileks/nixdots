@@ -309,7 +309,7 @@ in
   xdg.configFile."networkmanager-dmenu/config.ini".text = ''
     [dmenu]
     dmenu_command = ${pkgs.dmenu}/bin/dmenu -i
-    pinentry = ${pkgs.pinentry-gtk2}/bin/pinentry-gtk-2
+    pinentry = ${pkgs.pinentry-gnome3}/bin/pinentry-gnome3
     prompt = Networks
     [editor]
     terminal = ${pkgs.st}/bin/st
