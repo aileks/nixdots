@@ -524,8 +524,12 @@ in
 
   programs.mpv = {
     enable = true;
-    scripts = [ pkgs.mpvScripts.mpris ];
+    scripts = with pkgs.mpvScripts; [
+      mpris
+      modernz
+    ];
     config = {
+      osc = false;
       vo = "gpu-next";
       gpu-api = "vulkan";
       gpu-context = "waylandvk";
@@ -537,17 +541,16 @@ in
       osd-selected-color = colors.orange;
       osd-selected-outline-color = colors.background;
     };
-    scriptOpts.osc = {
-      background_color = colors.background;
-      timecode_color = colors.orange;
+    scriptOpts.modernz = {
+      osc_color = colors.background;
       title_color = colors.bright;
-      time_pos_color = colors.text;
-      buttons_color = colors.text;
-      small_buttonsL_color = colors.text;
-      small_buttonsR_color = colors.text;
-      top_buttons_color = colors.text;
-      held_element_color = colors.orange;
-      time_pos_outline_color = colors.background;
+      time_color = colors.text;
+      side_buttons_color = colors.text;
+      middle_buttons_color = colors.text;
+      playpause_color = colors.text;
+      seekbarfg_color = colors.orange;
+      seek_handle_color = colors.orange;
+      hover_effect_color = colors.orange;
     };
   };
 }
