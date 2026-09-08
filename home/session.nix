@@ -22,6 +22,13 @@ in
     pkgs.wlopm
   ];
 
+  xdg.configFile."autostart/polkit-gnome-authentication-agent-1.desktop".text = ''
+    [Desktop Entry]
+    Type=Application
+    Name=PolicyKit Authentication Agent
+    Hidden=true
+  '';
+
   programs.swaylock = {
     enable = true;
     settings = {
