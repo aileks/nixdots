@@ -39,16 +39,14 @@ let
       bind=SUPER+CTRL+SHIFT,${number},spawn,desktop-tag toggletag ${number}
     ''
   ) (lib.range 1 8);
-  bar = {
+  bar = output: {
+    inherit output;
     layer = "top";
     position = "top";
     height = 25;
     spacing = 0;
-    modules-left = [
-      "ext/workspaces"
-      "dwl/window#layout"
-    ];
-    modules-center = [ "dwl/window" ];
+    modules-left = [ "ext/workspaces" ];
+    modules-center = [ "custom/mango-window" ];
     "ext/workspaces" = {
       format = "{name}";
       all-outputs = false;
@@ -56,14 +54,13 @@ let
       on-click = "activate";
       on-click-right = "deactivate";
     };
-    "dwl/window#layout" = {
-      format = "{layout}";
+    "custom/mango-window" = {
+      exec = ''
+        ${pkgs.mango}/bin/mmsg watch all-monitors | ${pkgs.jq}/bin/jq --unbuffered -c '.monitors[] | select(.name == "${output}") | {text: ((.active_client.title // "") | @html)}'
+      '';
+      return-type = "json";
+      restart-interval = 1;
       tooltip = false;
-      on-click = "mmsg dispatch switch_layout";
-      on-click-right = "mmsg dispatch toggle_all_floating";
-    };
-    "dwl/window" = {
-      format = "{title}";
       max-length = 65;
       on-click-middle = "mmsg dispatch zoom";
     };
@@ -114,6 +111,7 @@ in
   home.packages = [
     monitorLayout
     desktopTag
+    pkgs.wmenu
   ];
 
   wayland.windowManager.mango = {
@@ -161,10 +159,9 @@ in
     };
     settings = [
       (
-        bar
+        bar "DP-4"
         // {
           name = "main";
-          output = "DP-4";
           modules-right = [
             "custom/bar-dnd"
             "custom/bar-volume"
@@ -175,10 +172,9 @@ in
         }
       )
       (
-        bar
+        bar "HDMI-A-2"
         // {
           name = "portrait";
-          output = "HDMI-A-2";
         }
       )
     ];
@@ -212,7 +208,7 @@ in
         box-shadow: none;
         background: #58534c;
       }
-      #window, #custom-bar-volume, #custom-bar-sysinfo,
+      #custom-mango-window, #custom-bar-volume, #custom-bar-sysinfo,
       #custom-bar-clock, #tray {
         padding: 0 8px;
       }
