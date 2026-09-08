@@ -1,7 +1,7 @@
 button="${BLOCK_BUTTON:-0}"
 
 case "$button" in
-  1) nohup wezterm start -- btop >/dev/null 2>&1 & ;;
+  1) nohup wezterm start --always-new-process -- btop >/dev/null 2>&1 & ;;
 esac
 
 mem=$(free | awk '/^Mem/ { printf "%.0f", $3 / $2 * 100 }')

@@ -85,6 +85,7 @@ in
       font_size = 14;
       window_background_opacity = 0.95;
       window_decorations = "NONE";
+      window_close_confirmation = "NeverPrompt";
       hide_tab_bar_if_only_one_tab = true;
       use_fancy_tab_bar = false;
       colors = {
@@ -495,7 +496,7 @@ in
   xdg.desktopEntries.yazi = {
     name = "Yazi";
     genericName = "File Manager";
-    exec = "${lib.getExe config.programs.wezterm.package} start --class yazi -- ${lib.getExe config.programs.yazi.finalPackage} %f";
+    exec = "${lib.getExe config.programs.wezterm.package} start --always-new-process --class yazi -- ${lib.getExe config.programs.yazi.finalPackage} %f";
     icon = "yazi";
     terminal = false;
     categories = [

@@ -67,5 +67,5 @@ fi
 if [[ -n ${TMUX-} ]]; then
   tmux switch-client -t "=$session"
 else
-  wezterm start -- tmux attach-session -t "=$session"
+  wezterm start --always-new-process -- tmux attach-session -t "=$session"
 fi
