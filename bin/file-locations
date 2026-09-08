@@ -1,0 +1,104 @@
+set -Eeuo pipefail
+
+if [[ -z ${YAZI_ID:-} ]]; then
+  printf 'Run file-locations from Yazi.\n' >&2
+  exit 1
+fi
+
+labels=()
+destinations=()
+
+add_location() {
+  local label=$1
+  label=${label//$'\n'/\\n}
+  label=${label//$'\r'/\\r}
+  label=${label//$'\t'/\\t}
+  labels+=("$((${#labels[@]} + 1))  $label")
+  destinations+=("$2")
+}
+
+decode_file_uri() {
+  local encoded=${1#file://} byte hex
+  local -n decoded_path=$2
+  decoded_path=''
+  if [[ $encoded == localhost/* ]]; then encoded=${encoded#localhost}; fi
+  [[ $encoded == /* ]] || return 1
+
+  # Decode only URI escapes; never interpret a path as shell syntax.
+  while [[ $encoded == *%* ]]; do
+    decoded_path+=${encoded%%\%*}
+    encoded=${encoded#*%}
+    [[ $encoded =~ ^([[:xdigit:]]{2}) ]] || return 1
+    hex=${BASH_REMATCH[1]}
+    [[ $hex != 00 ]] || return 1
+    printf -v byte '%b' "\\x$hex"
+    decoded_path+=$byte
+    encoded=${encoded:2}
+  done
+  decoded_path+=$encoded
+}
+
+bookmarks=${XDG_CONFIG_HOME:-$HOME/.config}/gtk-3.0/bookmarks
+if [[ ! -s $bookmarks && -f $HOME/.gtk-bookmarks ]]; then
+  bookmarks=$HOME/.gtk-bookmarks
+fi
+if [[ -r $bookmarks ]]; then
+  while IFS= read -r line || [[ -n $line ]]; do
+    [[ -n $line ]] || continue
+    uri=${line%% *}
+    label=${line#"$uri"}
+    label=${label# }
+    destination=$uri
+    if [[ $uri == file://* ]]; then
+      decode_file_uri "$uri" destination || continue
+    fi
+    [[ -n $label ]] || label=${destination##*/}
+    add_location "$label" "$destination"
+  done <"$bookmarks"
+fi
+
+# USB disks may report removable=false, so inherit hotplug from parent devices.
+while IFS= read -r -d '' label && IFS= read -r -d '' destination; do
+  add_location "Drive: $label" "$destination"
+done < <(
+  lsblk --json --output NAME,LABEL,MOUNTPOINTS,HOTPLUG,RM,TYPE \
+    | jq -j '
+      def mounted_external($parent_external):
+        (.hotplug or .rm or $parent_external) as $external |
+        (.label // .name) as $label |
+        (if $external then
+          .mountpoints[]? | select(type == "string" and . != "[SWAP]") |
+          $label, "\u0000", ., "\u0000"
+        else empty end),
+        (.children[]? | mounted_external($external));
+      .blockdevices[] | mounted_external(false)
+    '
+)
+
+# Browse already mounted phones/shares through their GVfs filesystem paths.
+while IFS= read -r -d '' gvfs_root; do
+  while IFS= read -r -d '' destination; do
+    add_location "Mounted: ${destination##*/}" "$destination"
+  done < <(find "$gvfs_root" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null)
+done < <(
+  findmnt --json --list --types fuse.gvfsd-fuse --output TARGET \
+    | jq -j '.filesystems[]?.target | ., "\u0000"'
+)
+
+((${#labels[@]})) || exit 0
+choice=$(printf '%s\n' "${labels[@]}" | wmenu -i -l 12 -p Files) || exit 0
+for index in "${!labels[@]}"; do
+  [[ $choice == "${labels[index]}" ]] || continue
+  destination=${destinations[index]}
+  if [[ $destination == /* ]]; then
+    if [[ -d $destination ]]; then
+      ya emit cd "$destination"
+    else
+      notify-send --app-name=file-locations 'Location unavailable' \
+        'That folder is no longer mounted or accessible.'
+    fi
+  else
+    pcmanfm "$destination"
+  fi
+  exit 0
+done

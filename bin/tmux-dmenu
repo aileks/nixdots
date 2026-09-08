@@ -19,13 +19,13 @@ while IFS= read -r session; do
   menu+=("session: $session")
 done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null || true)
 
-choice=$(printf '%s\n' "${menu[@]}" | dmenu -i -p 'tmux:') || exit 0
+choice=$(printf '%s\n' "${menu[@]}" | wmenu -i -p 'tmux:') || exit 0
 [[ -n $choice ]] || exit 0
 
 directory=$HOME
 create=0
 if [[ $choice == 'Create new session…' ]]; then
-  session=$(dmenu -p 'New session name:' </dev/null) || exit 0
+  session=$(wmenu -p 'New session name:' </dev/null) || exit 0
   [[ -n $session ]] || exit 0
   # tmux replaces dots and colons in new names, which would break exact lookup.
   if [[ $session == *[.:]* ]]; then
@@ -67,5 +67,5 @@ fi
 if [[ -n ${TMUX-} ]]; then
   tmux switch-client -t "=$session"
 else
-  st -e tmux attach-session -t "=$session"
+  wezterm start -- tmux attach-session -t "=$session"
 fi

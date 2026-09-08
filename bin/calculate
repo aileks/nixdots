@@ -1,5 +1,5 @@
 set -Eeuo pipefail
-expression=$(dmenu -p calculate </dev/null) || exit 0
+expression=$(wmenu -p calculate </dev/null) || exit 0
 [[ -n $expression ]] || exit 0
 directory=$(mktemp -d "${XDG_RUNTIME_DIR:?}/calculate.XXXXXXXX")
 trap 'rm -rf -- "$directory"' EXIT
@@ -9,7 +9,7 @@ if ! timeout 5 qalc --defaults --terse -- "$expression" >"$directory/result" 2>"
   exit 1
 fi
 result=$(cat "$directory/result")
-selected=$(dmenu -p 'enter to copy' <<<"$result") || exit 0
+selected=$(wmenu -p 'enter to copy' <<<"$result") || exit 0
 [[ $selected == "$result" ]] || exit 0
-xclip -selection clipboard -i "$directory/result"
+wl-copy --type 'text/plain;charset=utf-8' <"$directory/result"
 desktop-feedback status "Result copied"

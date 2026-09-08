@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>name</key><string>Cinder Grove</string>
+  <key>settings</key>
+  <array>
+    <dict>
+      <key>settings</key>
+      <dict>
+        <key>background</key><string>#131210</string>
+        <key>foreground</key><string>#BBB3A9</string>
+        <key>caret</key><string>#DDD5CA</string>
+        <key>selection</key><string>#3E3A34</string>
+        <key>lineHighlight</key><string>#23201C</string>
+      </dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>comment</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#58534C</string><key>fontStyle</key><string>italic</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>string</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#879B5C</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>constant, keyword, storage.modifier</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#E17A3F</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>keyword.operator</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#58918C</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>entity.name.function, support.function</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#6785A1</string><key>fontStyle</key><string>bold</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>entity.name.type, entity.name.class, support.type, support.class, storage.type</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#D9A441</string><key>fontStyle</key><string>italic</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>meta.preprocessor, keyword.control.import, keyword.control.include, entity.name.label</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#9A788F</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>constant.character.escape</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#D9A441</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>entity.name.tag</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#6785A1</string><key>fontStyle</key><string>italic</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>punctuation.separator, punctuation.terminator</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#58534C</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>markup.heading</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#E17A3F</string><key>fontStyle</key><string>bold</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>markup.inserted</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#879B5C</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>markup.deleted, invalid</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#B34A45</string></dict>
+    </dict>
+    <dict>
+      <key>scope</key><string>markup.changed</string>
+      <key>settings</key>
+      <dict><key>foreground</key><string>#D9A441</string></dict>
+    </dict>
+  </array>
+</dict>
+</plist>

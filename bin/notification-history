@@ -11,7 +11,7 @@ if [[ -z $rows ]]; then
   desktop-feedback status "No notification history"
   exit 0
 fi
-selected=$(dmenu -i -p notifications <<<"$rows") || exit 0
+selected=$(wmenu -i -p notifications <<<"$rows") || exit 0
 if ! grep -Fxq -- "$selected" <<<"$rows"; then
   exit 0
 fi

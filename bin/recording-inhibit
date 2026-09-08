@@ -19,14 +19,8 @@ recording_is_live() {
 }
 
 recording_is_live || exit 1
-xset s reset
 printf 'READY\n'
-seconds=0
+# swayidle honors logind's idle inhibitor for all of its timeout commands.
 while recording_is_live; do
   sleep 1
-  seconds=$((seconds + 1))
-  if ((seconds % 30 == 0)) && recording_is_live; then
-    # Reset idle time without changing the configured timeout or manual locks.
-    xset s reset
-  fi
 done

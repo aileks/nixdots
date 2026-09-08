@@ -1,0 +1,97 @@
+set -Eeuo pipefail
+
+action=${1:-}
+value=${2:-}
+main_output=DP-4
+portrait_output=HDMI-A-2
+
+exec 9>"${XDG_RUNTIME_DIR:?}/mango-monitor-layout.lock"
+flock 9
+monitors=$(mmsg get all-monitors)
+focused=$(mmsg get focusing-client)
+
+has_output() {
+  jq -e --arg name "$1" 'any(.monitors[]; .name == $name and .width > 0 and .height > 0)' <<<"$monitors" >/dev/null
+}
+
+target_for_tag() {
+  if [[ $1 == 8 ]] && has_output "$portrait_output"; then
+    printf '%s\n' "$portrait_output"
+  elif has_output "$main_output"; then
+    printf '%s\n' "$main_output"
+  elif has_output "$portrait_output"; then
+    printf '%s\n' "$portrait_output"
+  else
+    jq -r '.monitors[] | select(.active) | .name' <<<"$monitors"
+  fi
+}
+
+if [[ $action == reset-size ]]; then
+  # Entering floating mode resets Mango's per-client tile proportions.
+  if jq -e '.id != null and ((.is_floating or .is_fullscreen or .is_maximized) | not)' <<<"$focused" >/dev/null; then
+    id=$(jq -r '.id' <<<"$focused")
+    mmsg dispatch togglefloating "client,$id" >/dev/null
+    mmsg dispatch togglefloating "client,$id" >/dev/null
+  fi
+  exit 0
+fi
+
+if [[ $action == send-monitor ]]; then
+  has_output "$main_output" && has_output "$portrait_output" || exit 0
+  source=$(jq -r '.monitor // empty' <<<"$focused")
+  case "$value:$source" in
+    left:DP-4) value=8 ;;
+    right:HDMI-A-2)
+      value=$(jq -r --arg name "$main_output" '
+        [.monitors[] | select(.name == $name) | .active_tags[] | select(. != 8)] | first // 1
+      ' <<<"$monitors")
+      ;;
+    *) exit 0 ;;
+  esac
+  action=tag
+fi
+
+case "$action:$value" in
+  view:[1-8] | toggleview:[1-8] | tag:[1-8] | toggletag:[1-8]) ;;
+  *)
+    printf 'Usage: desktop-tag [view|toggleview|tag|toggletag] 1..8 | send-monitor left|right | reset-size\n' >&2
+    exit 2
+    ;;
+esac
+
+target=$(target_for_tag "$value")
+case "$action" in
+  view)
+    exec mmsg dispatch "viewcrossmon,$value,$target"
+    ;;
+  toggleview)
+    mmsg dispatch "focusmon,$target" >/dev/null
+    exec mmsg dispatch "toggleview,$value"
+    ;;
+esac
+
+id=$(jq -r '.id // empty' <<<"$focused")
+[[ -n $id ]] || exit 0
+source=$(jq -r '.monitor' <<<"$focused")
+
+if [[ $action == toggletag ]]; then
+  value=$(jq -r --argjson tag "$value" '
+    .tags | if index($tag) then map(select(. != $tag)) else . + [$tag] end
+    | sort | map(tostring) | join("|")
+  ' <<<"$focused")
+  [[ -n $value ]] || exit 0
+  target=$(target_for_tag "$value")
+fi
+
+if [[ $source == "$target" ]]; then
+  exec mmsg dispatch "tagsilent,$value" "client,$id"
+fi
+
+mmsg dispatch "tagcrossmon,$value,$target" "client,$id" >/dev/null
+while IFS=$'\t' read -r output tags; do
+  mmsg dispatch "viewcrossmon,$tags,$output" >/dev/null
+done < <(jq -r '
+  .monitors[] | select(.width > 0 and .height > 0)
+  | [.name, (.active_tags | map(tostring) | join("|"))] | @tsv
+' <<<"$monitors")
+mmsg dispatch "focusmon,$source" >/dev/null

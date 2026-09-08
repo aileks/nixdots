@@ -1,18 +1,20 @@
-set -Eeuo pipefail
+set -euo pipefail
 
-state_file="${XDG_RUNTIME_DIR:-/run/user/$UID}/night-light-on"
-if [[ -f $state_file ]]; then
-  if ! gammastep -x; then
-    desktop-feedback status "Night light change failed" || true
-    exit 1
-  fi
-  rm -f "$state_file"
-  desktop-feedback status "Night light off" || true
-else
-  if ! gammastep -O 4800; then
-    desktop-feedback status "Night light change failed" || true
-    exit 1
-  fi
-  touch "$state_file"
-  desktop-feedback status "Night light on" || true
-fi
+case "${1:-toggle}" in
+  apply)
+    exec systemctl --user try-restart night-light.service
+    ;;
+  toggle)
+    if systemctl --user is-active --quiet night-light.service; then
+      systemctl --user stop night-light.service
+      desktop-feedback status "Night light off" || true
+    else
+      systemctl --user start night-light.service
+      desktop-feedback status "Night light on" || true
+    fi
+    ;;
+  *)
+    echo "Usage: night-light [toggle|apply]" >&2
+    exit 2
+    ;;
+esac

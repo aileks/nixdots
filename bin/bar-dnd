@@ -3,5 +3,5 @@ if ! pause_level=$(dunstctl get-pause-level 2>/dev/null); then
 fi
 
 if ((pause_level > 0)); then
-  printf ' '
+  printf '\n'
 fi

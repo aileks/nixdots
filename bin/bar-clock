@@ -16,4 +16,4 @@ case "$idx" in
   *) fmt='%a %b %d %H:%M' ;;
 esac
 
-printf '^c#BBB3A9^%s^d^' "$(date +"$fmt")"
+printf '<span foreground="#BBB3A9">%s</span>\n' "$(date +"$fmt")"

@@ -8,11 +8,9 @@
 }:
 
 let
-  graphicalSessionTarget = "graphical-session.target";
   repo = "${config.home.homeDirectory}/${installation.repositoryDirectory}";
   createSymlink = path: config.lib.file.mkOutOfStoreSymlink "${repo}/config/${path}";
   configFiles = {
-    "autostart/picom.desktop" = "autostart/picom.desktop";
     "bat" = "bat";
     "btop" = "btop";
     "cava" = "cava";
@@ -28,24 +26,26 @@ let
   cinderGroveGtk = pkgs.cinder-grove-gtk;
   papirusCinderGrove = pkgs.papirus-cinder-grove;
   zenTwilight = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.twilight;
-  xsessionPath = lib.concatStringsSep ":" [
-    "${config.home.profileDirectory}/bin"
-    "/run/current-system/sw/bin"
-    "${config.home.homeDirectory}/.local/bin"
-  ];
-  lockSession = pkgs.writeShellApplication {
-    name = "lock-session";
-    runtimeInputs = [
-      pkgs.systemd
-      pkgs.xsecurelock
-    ];
-    text = builtins.readFile ./bin/lock-session;
-  };
+  helium =
+    (inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
+      flags = [ "--ozone-platform=wayland" ];
+    }).overrideAttrs
+      (previous: {
+        # Binary wrappers pass this obsolete shell expansion as a literal URL.
+        preFixup =
+          builtins.replaceStrings
+            [ ''--add-flags "\''${NIXOS_OZONE_WL:+\''${WAYLAND_DISPLAY:+--ozone-platform-hint=auto}}"'' ]
+            [ "" ]
+            previous.preFixup;
+      });
+
 in
 {
   imports = [
     ./home/scripts.nix
-    ./home/lf.nix
+    ./home/apps.nix
+    ./home/mango.nix
+    ./home/session.nix
   ];
 
   home = {
@@ -76,8 +76,6 @@ in
         wget
         zip
         zoxide
-        st
-        dmenu
         starship
         tmux
         ivpn-ui
@@ -91,7 +89,6 @@ in
         nixd
         nixfmt
         tree-sitter
-        celluloid
         lazygit
         duckdb
         postgresql_18
@@ -107,15 +104,9 @@ in
         signal-desktop
         fastmail-desktop
         onlyoffice-desktopeditors
-        chromium
         polkit_gnome
         gammastep
-        xcolor
-        clipmenu
         bemoji
-        xclip
-        maim
-        slop
         playerctl
         libnotify
         inotify-tools
@@ -140,16 +131,14 @@ in
         anki
         easyeffects
         dunst
-        feh
-        numlockx
         wiremix
         wireplumber
-        xdotool
-        xsecurelock
-        xss-lock
         bubblewrap
       ])
-      ++ [ zenTwilight ];
+      ++ [
+        zenTwilight
+        helium
+      ];
 
     pointerCursor = {
       enable = true;
@@ -176,20 +165,17 @@ in
       LIBVA_DRIVER_NAME = "nvidia";
       NVD_BACKEND = "direct";
       MOZ_DISABLE_RDD_SANDBOX = 1;
-      MOZ_X11_EGL = 1;
+      __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+      NIXOS_OZONE_WL = "1";
+      GDK_BACKEND = "wayland,x11,*";
+      QT_QPA_PLATFORM = "wayland;xcb";
+      SDL_VIDEODRIVER = "wayland";
+      EDITOR = "nvim";
+      VISUAL = "nvim";
+      BEMOJI_PICKER_CMD = "${pkgs.wmenu}/bin/wmenu -i -p emoji";
+      BEMOJI_CLIP_CMD = "${pkgs.wl-clipboard}/bin/wl-copy";
     };
   };
-
-  xsession.enable = true;
-  xsession.importedVariables = [
-    "XCURSOR_THEME"
-    "XCURSOR_SIZE"
-    "XCURSOR_PATH"
-    "XDG_CURRENT_DESKTOP"
-    "QT_QPA_PLATFORMTHEME"
-  ];
-
-  xresources.properties."Xft.dpi" = 96;
 
   gtk = {
     enable = true;
@@ -277,7 +263,7 @@ in
           "image/x-farbfeld"
           "image/x-png"
         ]
-        // forTypes "io.github.celluloid_player.Celluloid.desktop" [
+        // forTypes "mpv.desktop" [
           "application/ogg"
           "application/vnd.apple.mpegurl"
           "application/vnd.ms-asf"
@@ -425,7 +411,7 @@ in
         ]
         // {
           "x-scheme-handler/mailto" = [ "fastmail.desktop" ];
-          "inode/directory" = [ "thunar.desktop" ];
+          "inode/directory" = [ "yazi.desktop" ];
         };
     };
 
@@ -434,164 +420,11 @@ in
     dataFile."backgrounds/fantasy-woods.jpg".source = ./config/wallpaper/fantasy-woods.jpg;
   };
 
-  services = {
-    screen-locker = {
-      enable = true;
-      lockCmd = lib.getExe lockSession;
-      inactiveInterval = 10;
-      xss-lock.extraOptions = [ "--transfer-sleep-lock" ];
-      xss-lock.screensaverCycle = 5;
-    };
-    xsettingsd = {
-      enable = true;
-      settings = {
-        "Net/ThemeName" = config.gtk.theme.name;
-        "Net/IconThemeName" = config.gtk.iconTheme.name;
-        "Gtk/FontName" = "${config.gtk.font.name} ${toString config.gtk.font.size}";
-        "Gtk/CursorThemeName" = config.gtk.cursorTheme.name;
-        "Gtk/CursorThemeSize" = config.gtk.cursorTheme.size;
-        "Xft/DPI" = config.xresources.properties."Xft.dpi" * 1024;
-        "Xft/Antialias" = 1;
-        "Xft/Hinting" = 1;
-        "Xft/HintStyle" = "hintslight";
-        "Xft/RGBA" = "rgb";
-      };
-    };
-    udiskie = {
-      enable = true;
-      automount = true;
-      notify = true;
-      tray = "auto";
-    };
-    picom =
-      let
-        effectExclusions = [
-          "window_type = 'desktop' || window_type = 'dock' || window_type = 'menu' || window_type = 'dropdown_menu' || window_type = 'popup_menu' || window_type = 'tooltip' || window_type = 'combo' || window_type = 'dnd' || window_type = 'notification'"
-          "(class_g = 'zen-twilight' && window_type = 'utility' && role = 'Popup') || class_g = 'slop' || class_g = 'voxtype-osd-gtk4' || class_g = 'Dunst'"
-        ];
-      in
-      {
-        enable = true;
-        backend = "glx";
-        vSync = true;
-        fade = true;
-        activeOpacity = 1.0;
-        inactiveOpacity = 0.95;
-        shadow = true;
-        shadowExclude = effectExclusions ++ [ "_GTK_FRAME_EXTENTS@" ];
-        fadeExclude = effectExclusions;
-        opacityRules = map (condition: "100:${condition}") effectExclusions;
-        settings = {
-          use-damage = false;
-          blur = {
-            method = "dual_kawase";
-            strength = 5;
-          };
-          blur-background-exclude = config.services.picom.shadowExclude;
-        };
-      };
-  };
-
-  systemd.user.services = {
-    picom.Unit.ConditionEnvironment = "DISPLAY";
-    # Leave time for the locker within logind's sleep inhibitor deadline.
-    picom.Service.TimeoutStopSec = 2;
-
-    dwmblocks = {
-      Unit = {
-        Description = "dwm status blocks";
-        ConditionEnvironment = "DISPLAY";
-        PartOf = [ graphicalSessionTarget ];
-        After = [ graphicalSessionTarget ];
-      };
-      Service = {
-        ExecStart = lib.getExe pkgs.dwmblocks;
-        Environment = [ "PATH=${xsessionPath}" ];
-        Restart = "on-failure";
-        RestartSec = 2;
-      };
-      Install.WantedBy = [ graphicalSessionTarget ];
-    };
-
-    dunst = {
-      Unit = {
-        Description = "dunst notification daemon";
-        ConditionEnvironment = "DISPLAY";
-        PartOf = [ graphicalSessionTarget ];
-        After = [ graphicalSessionTarget ];
-      };
-      Service = {
-        ExecStart = "${pkgs.dunst}/bin/dunst";
-        Environment = [ "PATH=${xsessionPath}" ];
-        Restart = "on-failure";
-        RestartSec = 2;
-      };
-      Install.WantedBy = [ graphicalSessionTarget ];
-    };
-
-    wallpaper = {
-      Unit = {
-        Description = "Set X wallpaper";
-        ConditionEnvironment = "DISPLAY";
-        PartOf = [ graphicalSessionTarget ];
-        After = [ graphicalSessionTarget ];
-      };
-      Service = {
-        Type = "oneshot";
-        ExecStart = "${lib.getExe pkgs.feh} --no-fehbg --bg-fill ${config.home.homeDirectory}/.local/share/backgrounds/fantasy-woods.jpg";
-      };
-      Install.WantedBy = [ graphicalSessionTarget ];
-    };
-
-    polkit-gnome = {
-      Unit = {
-        Description = "polkit-gnome authentication agent";
-        ConditionEnvironment = "DISPLAY";
-        PartOf = [ graphicalSessionTarget ];
-        After = [ graphicalSessionTarget ];
-      };
-      Service = {
-        ExecStart = "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1";
-        Restart = "on-failure";
-        RestartSec = 2;
-      };
-      Install.WantedBy = [ graphicalSessionTarget ];
-    };
-
-    clipmenud = {
-      Unit = {
-        Description = "clipmenu clipboard history daemon";
-        ConditionEnvironment = "DISPLAY";
-        PartOf = [ graphicalSessionTarget ];
-        After = [ graphicalSessionTarget ];
-      };
-      Service = {
-        ExecStart = "${pkgs.clipmenu}/bin/clipmenud";
-        Environment = [
-          "PATH=${lib.makeBinPath [ pkgs.xsel ]}:${xsessionPath}"
-          "CM_MAX_CLIPS=50"
-        ];
-        Restart = "on-failure";
-        RestartSec = 2;
-      };
-      Install.WantedBy = [ graphicalSessionTarget ];
-    };
-
-    xssproxy = {
-      Unit = {
-        Description = "Forward application screensaver inhibitors to X11";
-        ConditionEnvironment = "DISPLAY";
-        PartOf = [ graphicalSessionTarget ];
-        After = [ graphicalSessionTarget ];
-      };
-      Service = {
-        ExecStart = lib.getExe pkgs.xssproxy;
-        Restart = "on-failure";
-        RestartSec = 2;
-      };
-      Install.WantedBy = [ graphicalSessionTarget ];
-    };
-
+  services.udiskie = {
+    enable = true;
+    automount = true;
+    notify = true;
+    tray = "auto";
   };
 
   programs.btop.enable = true;

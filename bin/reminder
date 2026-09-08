@@ -29,7 +29,7 @@ save_records() {
 }
 
 prompt() {
-  if ! answer=$(dmenu -i -p "$1" 2>"$temporary/menu-error"); then
+  if ! answer=$(wmenu -i -p "$1" 2>"$temporary/menu-error"); then
     [[ ! -s $temporary/menu-error ]] || desktop-feedback status "Reminder menu failed"
     exit 0
   fi

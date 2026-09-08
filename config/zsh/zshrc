@@ -54,6 +54,20 @@ alias lg="lazygit"
 alias vim="nvim"
 alias docker="podman"
 
+# Quit Yazi into its current directory; Q leaves the shell directory unchanged.
+y() {
+  local cwd_file cwd result
+  cwd_file=$(mktemp -t yazi-cwd.XXXXXX) || return
+  command yazi "$@" --cwd-file="$cwd_file"
+  result=$?
+  cwd=$(<"$cwd_file")
+  command rm -f -- "$cwd_file"
+  if [[ -n $cwd && $cwd != $PWD ]]; then
+    builtin cd -- "$cwd" || return
+  fi
+  return "$result"
+}
+
 # FZF
 export FZF_CTRL_T_OPTS="
   --walker-skip .git,node_modules,target
@@ -95,7 +109,9 @@ export _ZO_FZF_OPTS="
   --bind 'ctrl-/:change-preview-window(right|hidden|)'"
 
 # Antidote
-source "$HOME/.antidote/antidote.zsh"
+antidote_script="$HOME/.antidote/antidote.zsh"
+source "${antidote_script:A}"
+unset antidote_script
 antidote load "${${(%):-%N}:A:h}/zsh_plugins.txt"
 source "${${(%):-%N}:A:h}/cinder-grove.zsh"
 
@@ -111,7 +127,6 @@ esac
 
 source <(fzf --zsh)
 
-# report cwd via OSC 7 so st newterm opens here
-emit_osc7() { printf '\e]7;file://%s%s\e\\' "$HOST" "$PWD" }
-autoload -Uz add-zsh-hook
-add-zsh-hook precmd emit_osc7
+if [[ -r ${XDG_CONFIG_HOME:-$HOME/.config}/wezterm/shell-integration.sh ]]; then
+  source "${XDG_CONFIG_HOME:-$HOME/.config}/wezterm/shell-integration.sh"
+fi

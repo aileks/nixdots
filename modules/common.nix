@@ -72,11 +72,13 @@
   };
 
   services = {
-    displayManager.ly.enable = true;
+    displayManager.ly = {
+      enable = true;
+      x11Support = false;
+    };
     blueman.enable = true;
     openssh.enable = true;
     printing.enable = true;
-    tumbler.enable = true;
     gvfs.enable = true;
     udisks2.enable = true;
     fwupd.enable = true;
@@ -99,46 +101,61 @@
   };
 
   security.rtkit.enable = true;
-  security.pam.services.xsecurelock = { };
+  security.pam.services.swaylock = { };
 
-  services.logind.settings.Login = {
-    IdleAction = "suspend";
-    # xss-lock reports idle after the ten-minute screen saver timeout.
-    IdleActionSec = "20min";
-  };
+  # Home Manager starts the desktop services after Mango imports its environment.
+  services.displayManager.sessionPackages = lib.mkForce [
+    (pkgs.writeTextFile {
+      name = "mango-session";
+      destination = "/share/wayland-sessions/mango.desktop";
+      text = ''
+        [Desktop Entry]
+        Name=Mango
+        DesktopNames=mango;X-NIXOS-SYSTEMD-AWARE;
+        Comment=Mango Wayland session
+        Exec=${pkgs.mango}/bin/mango
+        Type=Application
+      '';
+      derivationArgs.passthru.providedSessions = [ "mango" ];
+    })
+  ];
+
+  services.logind.settings.Login.IdleAction = "ignore";
 
   services.xserver = {
-    enable = true;
+    enable = false;
+    displayManager.sessionCommands = ''
+      . /etc/profiles/per-user/${installation.user.name}/etc/profile.d/hm-session-vars.sh
+    '';
     xkb = {
       layout = "aileks";
-      options = "terminate:ctrl_alt_bksp";
       extraLayouts.aileks = {
         description = "US with Caps Lock and right Control swapped";
         languages = [ "eng" ];
         symbolsFile = ../config/xorg/keymap.xkb;
       };
     };
-    windowManager.dwm = {
-      enable = true;
-      package = pkgs.dwm;
-    };
-    displayManager.sessionCommands = ''
-      ${pkgs.gnome-keyring}/bin/gnome-keyring-daemon --start --components=secrets || true
-      ${pkgs.xset}/bin/xset r rate 250 50
-      ${pkgs.xset}/bin/xset dpms 660 660 660
-    '';
-  };
-
-  services.libinput = {
-    enable = true;
-    mouse.accelProfile = "flat";
   };
 
   xdg.portal = {
     enable = true;
     extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
     config.common.default = "gtk";
+    config.mango."org.freedesktop.impl.portal.Screenshot" = [ "wlr" ];
   };
+
+  environment.etc."xdg/pcmanfm/default/pcmanfm.conf".text = ''
+    [volume]
+    mount_on_startup=0
+    mount_removable=0
+    autorun=0
+  '';
+
+  environment.etc."xdg/libfm/libfm.conf".text = ''
+    [config]
+    terminal=wezterm
+    archiver=file-roller
+  '';
 
   virtualisation.podman = {
     enable = true;
@@ -149,14 +166,7 @@
   programs = {
     dconf.enable = true;
     nix-ld.enable = true;
-    thunar = {
-      enable = true;
-      plugins = with pkgs; [
-        thunar-archive-plugin
-        thunar-media-tags-plugin
-        thunar-volman
-      ];
-    };
+    mango.enable = true;
     system-config-printer.enable = true;
     zsh.enable = true;
     localsend.enable = true;

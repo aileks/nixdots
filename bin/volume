@@ -27,5 +27,3 @@ if [[ $state == *'[MUTED]'* ]]; then
 else
   desktop-feedback progress "$value" "Volume $value%" || true
 fi
-
-pkill -RTMIN+10 dwmblocks 2>/dev/null || true

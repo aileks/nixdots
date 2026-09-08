@@ -4,11 +4,12 @@ directory=$(mktemp -d "${XDG_RUNTIME_DIR:?}/ocr.XXXXXXXX")
 trap 'rm -rf -- "$directory"' EXIT
 trap 'exit 130' INT TERM HUP
 
-if ! geometry=$(slop -f '%wx%h+%x+%y' 2>"$directory/error"); then
-  [[ ! -s $directory/error ]] || desktop-feedback status "Region selection failed"
+if ! geometry=$(slurp -f '%x,%y %wx%h' </dev/null 2>"$directory/error"); then
+  [[ ! -s $directory/error || $(<"$directory/error") == 'selection cancelled' ]] \
+    || desktop-feedback status "Region selection failed"
   exit 0
 fi
-if ! maim -g "$geometry" "$directory/image.png" 2>"$directory/error" \
+if ! grim -g "$geometry" "$directory/image.png" 2>"$directory/error" \
   || ! tesseract "$directory/image.png" stdout -l eng >"$directory/text" 2>"$directory/error"; then
   desktop-feedback status "Text recognition failed"
   exit 1
@@ -17,7 +18,7 @@ if ! grep -q '[^[:space:]]' "$directory/text"; then
   desktop-feedback status "No text found"
   exit 0
 fi
-if ! xclip -selection clipboard -i "$directory/text"; then
+if ! wl-copy --type 'text/plain;charset=utf-8' <"$directory/text"; then
   desktop-feedback status "Could not copy recognized text"
   exit 1
 fi

@@ -15,7 +15,14 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    voxtype.url = "github:peteonrails/voxtype/v1.0.1";
+    helium = {
+      url = "github:oxcl/nix-flake-helium-browser";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    mango = {
+      url = "github:mangowm/mango/0.16.3";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -29,34 +36,14 @@
       system = "x86_64-linux";
       installation = import ./installation.nix;
       localPackageNames = [
-        "dwm"
-        "dmenu"
-        "st"
-        "dwmblocks"
+        "wmenu"
         "cinder-grove-gtk"
         "papirus-cinder-grove"
         "fastmail-desktop"
         "nvidia-vaapi-driver"
       ];
       overlay = final: prev: {
-        dwm = import ./packages/dwm.nix {
-          dwm = prev.dwm;
-          inherit (prev)
-            fetchpatch
-            lib
-            libxcb
-            libxcursor
-            ;
-        };
-        dmenu = import ./packages/dmenu.nix {
-          dmenu = prev.dmenu;
-          inherit (prev) fetchpatch lib;
-        };
-        st = import ./packages/st.nix {
-          st = prev.st;
-          inherit (prev) fetchpatch lib harfbuzz;
-        };
-        dwmblocks = final.callPackage ./packages/dwmblocks-async.nix { };
+        wmenu = final.callPackage ./packages/wmenu.nix { wmenu = prev.wmenu; };
         cinder-grove-gtk = final.callPackage ./packages/cinder-grove-gtk.nix { };
         papirus-cinder-grove = final.callPackage ./packages/papirus-cinder-grove.nix { };
         fastmail-desktop = final.callPackage ./packages/fastmail-desktop.nix { };

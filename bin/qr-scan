@@ -4,11 +4,12 @@ directory=$(mktemp -d "${XDG_RUNTIME_DIR:?}/qr-scan.XXXXXXXX")
 trap 'rm -rf -- "$directory"' EXIT
 trap 'exit 130' INT TERM HUP
 
-if ! geometry=$(slop -f '%wx%h+%x+%y' 2>"$directory/error"); then
-  [[ ! -s $directory/error ]] || desktop-feedback status "Region selection failed"
+if ! geometry=$(slurp -f '%x,%y %wx%h' </dev/null 2>"$directory/error"); then
+  [[ ! -s $directory/error || $(<"$directory/error") == 'selection cancelled' ]] \
+    || desktop-feedback status "Region selection failed"
   exit 0
 fi
-if ! maim -g "$geometry" "$directory/image.png" 2>"$directory/error"; then
+if ! grim -g "$geometry" "$directory/image.png" 2>"$directory/error"; then
   desktop-feedback status "QR capture failed"
   exit 1
 fi

@@ -1,0 +1,24 @@
+set -Eeuo pipefail
+umask 077
+
+if ! rows=$(cliphist list); then
+  desktop-feedback status "Clipboard history unavailable"
+  exit 1
+fi
+if [[ -z $rows ]]; then
+  desktop-feedback status "No clipboard history"
+  exit 0
+fi
+selected=$(wmenu -i -p clipboard <<<"$rows") || exit 0
+[[ $selected != *$'\n'* ]] || exit 0
+# Keep clipboard contents out of external command arguments.
+grep -Fxq -f <(printf '%s\n' "$selected") <<<"$rows" || exit 0
+
+directory=$(mktemp -d "${XDG_RUNTIME_DIR:?}/clipboard-menu.XXXXXXXX")
+trap 'rm -rf -- "$directory"' EXIT
+trap 'exit 130' INT TERM HUP
+if ! cliphist decode <<<"$selected" >"$directory/content" \
+  || ! wl-copy <"$directory/content"; then
+  desktop-feedback status "Could not copy clipboard history entry"
+  exit 1
+fi

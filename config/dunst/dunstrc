@@ -1,6 +1,6 @@
 [global]
-dmenu = dmenu -i -p notification
-monitor = 0
+    dmenu = wmenu -i -p notification
+    monitor = DP-4
 follow = none
 width = 380
 height = (0, 120)

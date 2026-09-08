@@ -25,7 +25,7 @@ let
       pkgs.coreutils
       pkgs.gawk
       pkgs.procps
-      pkgs.st
+      pkgs.wezterm
       config.programs.btop.package
     ];
     text = builtins.readFile ../bin/bar-sysinfo;
@@ -37,16 +37,17 @@ let
   };
   powerMenu = pkgs.writeShellApplication {
     name = "power-menu";
-    runtimeInputs = with pkgs; [
-      dmenu
-      procps
-      systemd
+    runtimeInputs = [
+      config.lib.nixdots.lockSession
+      pkgs.systemd
+      pkgs.mango
+      pkgs.wmenu
     ];
     text = ''
-      choice=$(printf '%s\n' "log out" "suspend" "reboot" "shut down" | dmenu -p power)
+      choice=$(printf '%s\n' "log out" "suspend" "reboot" "shut down" | wmenu -p power) || exit 0
       case "$choice" in
-        "log out") pkill dwm ;;
-        "suspend") systemctl suspend ;;
+        "log out") mmsg dispatch quit ;;
+        "suspend") lock-session && systemctl suspend ;;
         "reboot") systemctl reboot ;;
         "shut down") systemctl poweroff ;;
       esac
@@ -74,9 +75,9 @@ let
     runtimeInputs = [
       desktopFeedback
       pkgs.coreutils
-      pkgs.dmenu
+      pkgs.wmenu
       pkgs.findutils
-      pkgs.st
+      pkgs.wezterm
       pkgs.tmux
     ];
     text = builtins.readFile ../bin/tmux-dmenu;
@@ -85,8 +86,7 @@ let
     name = "night-light";
     runtimeInputs = [
       desktopFeedback
-      pkgs.coreutils
-      pkgs.gammastep
+      pkgs.systemd
     ];
     text = builtins.readFile ../bin/night-light;
   };
@@ -95,7 +95,6 @@ let
     runtimeInputs = [
       desktopFeedback
       pkgs.gawk
-      pkgs.procps
       pkgs.wireplumber
     ];
     text = builtins.readFile ../bin/volume;
@@ -134,12 +133,12 @@ let
       coreutils
       gawk
       gpu-screen-recorder
+      jq
       libnotify
-      slop
+      mango
+      slurp
       util-linux
       xdg-user-dirs
-      xdotool
-      xrandr
     ]);
     text = builtins.readFile ../bin/screenrecord;
   };
@@ -148,7 +147,6 @@ let
     runtimeInputs = [
       pkgs.coreutils
       pkgs.systemd
-      pkgs.xset
     ];
     text = builtins.readFile ../bin/recording-inhibit;
   };
@@ -156,19 +154,20 @@ let
     name = "screenshot";
     runtimeInputs = with pkgs; [
       coreutils
+      grim
+      jq
       libnotify
-      maim
-      slop
-      xclip
+      mango
+      slurp
+      wl-clipboard
       xdg-user-dirs
-      xdotool
     ];
     text = builtins.readFile ../bin/screenshot;
   };
   recordMenu = pkgs.writeShellApplication {
     name = "record-menu";
     runtimeInputs = [
-      pkgs.dmenu
+      pkgs.wmenu
       screenrecord
     ];
     text = builtins.readFile ../bin/record-menu;
@@ -180,10 +179,22 @@ let
       pkgs.coreutils
       pkgs.systemd
       pkgs.util-linux
-      pkgs.xclip
+      pkgs.wl-clipboard
       pkgs.diffutils
     ];
     text = builtins.readFile ../bin/private-clipboard;
+  };
+  clipboardMenu = pkgs.writeShellApplication {
+    name = "clipboard-menu";
+    runtimeInputs = [
+      desktopFeedback
+      pkgs.cliphist
+      pkgs.coreutils
+      pkgs.gnugrep
+      pkgs.wl-clipboard
+      pkgs.wmenu
+    ];
+    text = builtins.readFile ../bin/clipboard-menu;
   };
   regionOcr = pkgs.writeShellApplication {
     name = "region-ocr";
@@ -191,9 +202,9 @@ let
       desktopFeedback
       pkgs.coreutils
       pkgs.gnugrep
-      pkgs.slop
-      pkgs.maim
-      pkgs.xclip
+      pkgs.slurp
+      pkgs.grim
+      pkgs.wl-clipboard
       (pkgs.tesseract5.override { enableLanguages = [ "eng" ]; })
     ];
     text = builtins.readFile ../bin/region-ocr;
@@ -206,8 +217,8 @@ let
       pkgs.coreutils
       pkgs.diffutils
       pkgs.glibc.bin
-      pkgs.slop
-      pkgs.maim
+      pkgs.slurp
+      pkgs.grim
       pkgs.zbar
       pkgs.xmlstarlet
     ];
@@ -218,7 +229,7 @@ let
     runtimeInputs = [
       desktopFeedback
       pkgs.coreutils
-      pkgs.dmenu
+      pkgs.wmenu
       pkgs.dunst
       pkgs.gnugrep
       pkgs.jq
@@ -232,7 +243,7 @@ let
       desktopFeedback
       pkgs.dunst
       pkgs.jq
-      pkgs.dmenu
+      pkgs.wmenu
       pkgs.gnugrep
     ];
     text = builtins.readFile ../bin/notification-history;
@@ -242,19 +253,28 @@ let
     runtimeInputs = [
       desktopFeedback
       pkgs.coreutils
-      pkgs.dmenu
+      pkgs.wmenu
       pkgs.libqalculate
-      pkgs.xclip
+      pkgs.wl-clipboard
     ];
     text = builtins.readFile ../bin/calculate;
+  };
+  colorPicker = pkgs.writeShellApplication {
+    name = "color-picker";
+    runtimeInputs = [
+      pkgs.hyprpicker
+      pkgs.wl-clipboard
+    ];
+    text = ''
+      exec hyprpicker --autocopy --format hex --no-fancy
+    '';
   };
   monitorMenu = pkgs.writeShellApplication {
     name = "monitor-menu";
     runtimeInputs = [
       desktopFeedback
-      pkgs.autorandr
-      pkgs.dmenu
-      pkgs.gnugrep
+      config.lib.nixdots.monitorLayout
+      pkgs.wmenu
     ];
     text = builtins.readFile ../bin/monitor-menu;
   };
@@ -267,14 +287,8 @@ let
       notificationHistory
       calculate
       monitorMenu
-      nightLight
-      powerMenu
-      pkgs.dmenu
-      pkgs.dunst
+      pkgs.wmenu
       pkgs.networkmanager_dmenu
-      pkgs.clipmenu
-      pkgs.st
-      pkgs.wiremix
     ];
     text = builtins.readFile ../bin/desktop-actions;
   };
@@ -297,22 +311,24 @@ in
     screenrecord
     screenshot
     recordMenu
+    clipboardMenu
     regionOcr
     qrScan
     reminder
     notificationHistory
     calculate
+    colorPicker
     monitorMenu
     desktopActions
   ];
 
   xdg.configFile."networkmanager-dmenu/config.ini".text = ''
     [dmenu]
-    dmenu_command = ${pkgs.dmenu}/bin/dmenu -i
+    dmenu_command = ${pkgs.wmenu}/bin/wmenu -i
     pinentry = ${pkgs.pinentry-gnome3}/bin/pinentry-gnome3
     prompt = Networks
     [editor]
-    terminal = ${pkgs.st}/bin/st
+    terminal = ${pkgs.wezterm}/bin/wezterm
     gui_if_available = True
     gui = ${pkgs.networkmanagerapplet}/bin/nm-connection-editor
   '';
@@ -321,9 +337,9 @@ in
     Unit = {
       Description = "Temporary private QR clipboard";
       PartOf = [ "graphical-session.target" ];
-      Conflicts = [ "clipmenud.service" ];
-      Before = [ "clipmenud.service" ];
-      ConditionEnvironment = "DISPLAY";
+      Conflicts = [ "cliphist.service" ];
+      Before = [ "cliphist.service" ];
+      ConditionEnvironment = "WAYLAND_DISPLAY";
     };
     Service = {
       ExecStart = "${pkgs.coreutils}/bin/timeout --foreground --kill-after=2s 60s ${lib.getExe privateClipboard} serve";
@@ -343,7 +359,7 @@ in
         "dunst.service"
       ];
       Requisite = [ "graphical-session.target" ];
-      ConditionEnvironment = "DISPLAY";
+      ConditionEnvironment = "WAYLAND_DISPLAY";
     };
     Service = {
       Type = "oneshot";

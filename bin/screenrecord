@@ -98,33 +98,29 @@ file="$directory/$(date +%Y-%m-%d_%H-%M-%S-%N).mp4"
 
 case "$mode" in
   output)
-    # X11 has no per-monitor capture target, so record the monitor under the
-    # cursor as a region
-    read -r mouse_x mouse_y <<<"$(xdotool getmouselocation --shell \
-      | awk -F= '/^(X|Y)=/ { v[$1] = $2 } END { print v["X"], v["Y"] }')"
-    monitor=$(xrandr --query | awk -v mx="$mouse_x" -v my="$mouse_y" '
-      / connected / {
-        for (i = 1; i <= NF; i++) {
-          if ($i ~ /^[0-9]+x[0-9]+\+[0-9]+\+[0-9]+$/) {
-            split($i, wh, "x")
-            split(wh[2], geo, "+")
-            if (mx >= geo[2] && mx < geo[2] + wh[1] && \
-                my >= geo[3] && my < geo[3] + geo[1]) {
-              print $i
-              exit
-            }
-          }
-        }
-      }')
-    if [[ -z $monitor ]]; then
+    if ! monitor=$(mmsg get cursorpos | jq -er \
+      '.monitor | select(type == "string" and length > 0)'); then
       notify-send -u critical -a Recording "Recording failed" \
         "Could not determine the monitor under the cursor."
       exit 1
     fi
-    args=(-w region -region "$monitor")
+    args=(-w "$monitor")
     ;;
   region)
-    geometry=$(slop -f '%wx%h+%x+%y') || exit 0
+    selection=$(slurp -f '%x %y %w %h' </dev/null) || exit 0
+    read -r x y width height <<<"$selection"
+    # The recorder captures one monitor, chosen by the region's center.
+    if ! mmsg get all-monitors | jq -e \
+      --argjson x "$x" --argjson y "$y" \
+      --argjson width "$width" --argjson height "$height" \
+      '.monitors | any(.[]; $width > 0 and $height > 0 and
+        $x >= .x and $y >= .y and
+        $x + $width <= .x + .width and $y + $height <= .y + .height)' >/dev/null; then
+      notify-send -u critical -a Recording "Recording failed" \
+        "Select a region entirely within one display."
+      exit 1
+    fi
+    geometry="${width}x${height}+${x}+${y}"
     args=(-w region -region "$geometry")
     ;;
   *)
