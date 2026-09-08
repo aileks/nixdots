@@ -48,13 +48,13 @@ static const Rule rules[] = {
 	 *	WM_NAME(STRING) = title
 	 */
 	/* class                     instance    title       tags mask     isfloating   isfullscreen   isterminal   noswallow   monitor   canfocus   scratchkey */
-	{ "st-256color",             NULL,       NULL,       0,            0,           0,             1,           0,          0,        1,         0 },
+	{ "st-256color",             NULL,       NULL,       0,            0,           0,             1,           0,          -1,        1,         0 },
 	{ "imv",                     NULL,       NULL,       0,            1,           0,             0,           0,          0,        1,         0 },
-	{ "xdg-desktop-portal-gtk",  NULL,       NULL,       0,            1,           0,             0,           0,          0,       1,         0 },
-	{ "Qalculate-gtk",           NULL,       NULL,       0,            1,           0,             0,           0,          0,       1,         0 },
-	{ "polkit-gnome",            NULL,       NULL,       0,            1,           0,             0,           0,          0,       1,         0 },
-	{ "nm-connection-editor",    NULL,       NULL,       0,            1,           0,             0,           0,          0,       1,         0 },
-	{ "voxtype-osd-gtk4",        NULL,       NULL,       0,            1,           0,             0,           1,          0,       0,         0 },
+	{ "xdg-desktop-portal-gtk",  NULL,       NULL,       0,            1,           0,             0,           0,          0,        1,         0 },
+	{ "Qalculate-gtk",           NULL,       NULL,       0,            1,           0,             0,           0,          0,        1,         0 },
+	{ "polkit-gnome",            NULL,       NULL,       0,            1,           0,             0,           0,          0,        1,         0 },
+	{ "nm-connection-editor",    NULL,       NULL,       0,            1,           0,             0,           0,          0,        1,         0 },
+	{ "voxtype-osd-gtk4",        NULL,       NULL,       0,            1,           0,             0,           1,          0,        0,         0 },
 };
 
 /* layout(s) */
@@ -72,7 +72,6 @@ static const Layout layouts[] = {
 	/* symbol     arrange function */
 	{ "[]=",      tile }, /* first entry is default */
 	{ "><>",      NULL }, /* no layout function means floating behavior */
-	{ "[M]",      monocle },
 };
 
 /* key definitions */
