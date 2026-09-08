@@ -86,8 +86,21 @@ in
       window_background_opacity = 0.95;
       window_decorations = "NONE";
       window_close_confirmation = "NeverPrompt";
-      hide_tab_bar_if_only_one_tab = true;
+      hide_tab_bar_if_only_one_tab = false;
       use_fancy_tab_bar = false;
+      tab_and_split_indices_are_zero_based = false;
+      scrollback_lines = 10000;
+      default_gui_startup_args = [
+        "connect"
+        "unix"
+      ];
+      unix_domains = [
+        {
+          name = "unix";
+          # Also used by wezterm-dmenu to detect a server without starting it.
+          socket_path = lib.generators.mkLuaInline ''os.getenv("XDG_RUNTIME_DIR") .. "/wezterm-mux.sock"'';
+        }
+      ];
       colors = {
         foreground = colors.text;
         background = colors.background;
@@ -144,6 +157,8 @@ in
       };
     };
   };
+
+  programs.wezterm.extraConfig = builtins.readFile ../config/wezterm/mux.lua;
 
   xdg.configFile."wezterm/shell-integration.sh".source =
     "${config.programs.wezterm.package}/etc/profile.d/wezterm.sh";

@@ -70,17 +70,17 @@ let
     ];
     text = builtins.readFile ../bin/home-backup;
   };
-  tmuxDmenu = pkgs.writeShellApplication {
-    name = "tmux-dmenu";
+  weztermDmenu = pkgs.writeShellApplication {
+    name = "wezterm-dmenu";
     runtimeInputs = [
       desktopFeedback
       pkgs.coreutils
       pkgs.wmenu
       pkgs.findutils
       pkgs.wezterm
-      pkgs.tmux
+      pkgs.jq
     ];
-    text = builtins.readFile ../bin/tmux-dmenu;
+    text = builtins.readFile ../bin/wezterm-dmenu;
   };
   nightLight = pkgs.writeShellApplication {
     name = "night-light";
@@ -302,7 +302,7 @@ in
     powerMenu
     desktopFeedback
     homeBackup
-    tmuxDmenu
+    weztermDmenu
     nightLight
     volume
     brightness

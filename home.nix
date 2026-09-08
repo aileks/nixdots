@@ -20,7 +20,6 @@ let
     "nvim" = "nvim";
     "qt6ct" = "qt6ct";
     "rsync-home.excludes" = "rsync-home.excludes";
-    "tmux" = "tmux";
     "starship.toml" = "starship/starship.toml";
   };
   cinderGroveGtk = pkgs.cinder-grove-gtk;
@@ -77,7 +76,6 @@ in
         zip
         zoxide
         starship
-        tmux
         ivpn-ui
         neovim
         go
@@ -127,7 +125,6 @@ in
         hunspell
         hunspellDicts.en_US
         (tesseract5.override { enableLanguages = [ "eng" ]; })
-        tmux-sessionizer
         anki
         easyeffects
         dunst

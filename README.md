@@ -22,8 +22,8 @@ sudo ./bin/install --hostname your-hostname
 | -------------------- | ---------------------------- |
 | `Mod + Space`        | dmenu                        |
 | `Mod + Ctrl + Space` | desktop actions menu         |
-| `Mod + Return`       | terminal (st)                |
-| `Mod + T`            | tmux project launcher        |
+| `Mod + Return`       | WezTerm mux terminal         |
+| `Mod + T`            | WezTerm project launcher     |
 | `Mod + W`            | browser (Zen)                |
 | `Mod + E`            | file manager (Thunar)        |
 | `Mod + S`            | Signal                       |
