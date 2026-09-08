@@ -15,15 +15,24 @@ let
     ];
     text = builtins.readFile ../bin/bar-dnd;
   };
-  barSysinfo = pkgs.writeShellApplication {
-    name = "bar-sysinfo";
+  barMemory = pkgs.writeShellApplication {
+    name = "bar-memory";
     runtimeInputs = [
       pkgs.coreutils
       pkgs.gawk
       pkgs.jq
       pkgs.procps
     ];
-    text = builtins.readFile ../bin/bar-sysinfo;
+    text = builtins.readFile ../bin/bar-memory;
+  };
+  barCpuTemperature = pkgs.writeShellApplication {
+    name = "bar-cpu-temperature";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gawk
+      pkgs.jq
+    ];
+    text = builtins.readFile ../bin/bar-cpu-temperature;
   };
   barGpu = pkgs.writeShellApplication {
     name = "bar-gpu";
@@ -285,7 +294,8 @@ in
 {
   home.packages = [
     barDnd
-    barSysinfo
+    barMemory
+    barCpuTemperature
     barGpu
     powerMenu
     desktopFeedback

@@ -16,6 +16,5 @@ history=$(dunstctl count history 2>/dev/null || printf '?')
 jq -cn --arg text "$icon" --arg class "$state" \
   --arg tooltip "Do not disturb: $dnd
 Waiting: $waiting
-History: $history
-Left: history · Right: do not disturb" \
+History: $history" \
   '{text: $text, class: $class, tooltip: $tooltip}'

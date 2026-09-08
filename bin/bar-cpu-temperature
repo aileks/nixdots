@@ -1,4 +1,3 @@
-read -r mem used total < <(free --bytes | awk '/^Mem/ { printf "%.0f %.1f %.1f\n", $3 / $2 * 100, $3 / 1024^3, $2 / 1024^3 }')
 temp=""
 for d in /sys/class/hwmon/hwmon*; do
   if [[ "$(cat "$d/name" 2>/dev/null)" == k10temp ]]; then
@@ -23,14 +22,6 @@ for d in /sys/class/hwmon/hwmon*; do
     break
   fi
 done
-text="<span foreground=\"#6785A1\">RAM $mem%</span>"
-if [[ -n $temp ]]; then
-  text+=" <span foreground=\"#E17A3F\">$temp°C</span>"
-fi
-storage=$(df -h --output=used,size,avail / | awk 'NR == 2 { printf "%s / %s used, %s free", $1, $2, $3 }')
-jq -cn --arg text "$text" \
-  --arg tooltip "RAM: $used / $total GiB
-CPU temperature: ${temp:-unavailable}${temp:+°C}
-Root filesystem: $storage
-Click: btop" \
+jq -cn --arg text "${temp:-n/a}${temp:+°C}" \
+  --arg tooltip "CPU temperature: ${temp:-unavailable}${temp:+°C}" \
   '{text: $text, tooltip: $tooltip}'

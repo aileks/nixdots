@@ -1,7 +1,7 @@
 if ! stats=$(timeout 3s nvidia-smi --id=0 \
   --query-gpu=name,utilization.gpu,temperature.gpu,memory.used,memory.total \
   --format=csv,noheader,nounits 2>/dev/null); then
-  jq -cn '{text: "GPU n/a", class: "unavailable", tooltip: "GPU statistics unavailable"}'
+  jq -cn '{text: "n/a", class: "unavailable", tooltip: "GPU statistics unavailable"}'
   exit 0
 fi
 
@@ -9,11 +9,11 @@ jq -cn --arg stats "$stats" '
   $stats | split(",") | map(gsub("^\\s+|\\s+$"; "")) |
   if length == 5 and (.[1:] | all(test("^[0-9]+$"))) then
     {
-      text: ("GPU " + .[1] + "% " + .[2] + "°C"),
+      text: (.[1] + "% " + .[2] + "°C"),
       tooltip: (.[0] + "\nUtilization: " + .[1] + "%\nTemperature: " + .[2] +
-        "°C\nVRAM: " + .[3] + " / " + .[4] + " MiB\nClick: btop")
+        "°C\nVRAM: " + .[3] + " / " + .[4] + " MiB")
     }
   else
-    {text: "GPU n/a", class: "unavailable", tooltip: "GPU statistics unavailable"}
+    {text: "n/a", class: "unavailable", tooltip: "GPU statistics unavailable"}
   end
 '

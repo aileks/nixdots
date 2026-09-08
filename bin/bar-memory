@@ -1,0 +1,6 @@
+read -r mem used total < <(free --bytes | awk '/^Mem/ { printf "%.0f %.1f %.1f\n", $3 / $2 * 100, $3 / 1024^3, $2 / 1024^3 }')
+storage=$(df -h --output=used,size,avail / | awk 'NR == 2 { printf "%s / %s used, %s free", $1, $2, $3 }')
+jq -cn --arg text "$mem%" \
+  --arg tooltip "RAM: $used / $total GiB
+Root filesystem: $storage" \
+  '{text: $text, tooltip: $tooltip}'

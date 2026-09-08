@@ -36,14 +36,14 @@ let
     spacing = 0;
     modules-left = [
       "ext/workspaces"
-      "mpris"
+      "custom/mango-window"
     ];
-    modules-center = [ "custom/mango-window" ];
+    modules-center = [ "mpris" ];
     modules-right = [
       "custom/bar-dnd"
       "pulseaudio"
-      "cpu"
-      "custom/bar-sysinfo"
+      "group/processor"
+      "custom/bar-memory"
       "custom/bar-gpu"
       "clock"
       "tray"
@@ -63,7 +63,6 @@ let
       restart-interval = 1;
       tooltip = false;
       max-length = 65;
-      on-click-middle = "mmsg dispatch zoom";
     };
     "custom/bar-dnd" = {
       exec = "bar-dnd";
@@ -75,34 +74,49 @@ let
     };
     pulseaudio = {
       format = "  {volume}%";
-      format-muted = "  mute";
-      tooltip-format = "{desc}\nVolume: {volume}%\nLeft: mute · Right: mixer · Scroll: volume";
+      format-muted = "󰖁  mute";
+      tooltip-format = "{desc}\nVolume: {volume}%";
       on-click = "${pkgs.wireplumber}/bin/wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
       on-click-right = "${pkgs.wezterm}/bin/wezterm start --always-new-process -- ${pkgs.wiremix}/bin/wiremix";
       on-scroll-up = "${pkgs.wireplumber}/bin/wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+";
       on-scroll-down = "${pkgs.wireplumber}/bin/wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%-";
     };
+    "group/processor" = {
+      orientation = "horizontal";
+      modules = [
+        "cpu"
+        "custom/bar-cpu-temperature"
+      ];
+    };
     cpu = {
       interval = 5;
-      format = "CPU {usage}%";
+      format = "  {usage}%";
       on-click = openBtop;
     };
-    "custom/bar-sysinfo" = {
-      exec = "bar-sysinfo";
+    "custom/bar-cpu-temperature" = {
+      exec = "bar-cpu-temperature";
+      return-type = "json";
+      interval = 10;
+      on-click = openBtop;
+    };
+    "custom/bar-memory" = {
+      exec = "bar-memory";
+      format = "󰍛  {}";
       return-type = "json";
       interval = 10;
       on-click = openBtop;
     };
     "custom/bar-gpu" = {
       exec = "bar-gpu";
+      format = "󰢮  {}";
       return-type = "json";
       interval = 5;
-      on-click = openBtop;
+      on-click = "${pkgs.wezterm}/bin/wezterm start --always-new-process -- ${lib.getExe pkgs.nvtopPackages.nvidia}";
     };
     clock = {
       format = "  {:%a %b %d %H:%M}";
       format-alt = "  {:%Y-%m-%d %H:%M}";
-      tooltip-format = "<tt>{calendar}</tt>\nScroll: change month";
+      tooltip-format = "<tt>{calendar}</tt>";
       calendar = {
         mode = "month";
         on-scroll = 1;
@@ -123,7 +137,7 @@ let
       dynamic-len = 38;
       title-len = 38;
       max-length = 40;
-      tooltip-format = "{player} ({status})\n{artist}\n{title}\n{album}\nLeft: play/pause · Middle: previous · Right: next";
+      tooltip-format = "{player} ({status})\n{artist}\n{title}\n{album}";
       status-icons = {
         playing = "";
         paused = "";
@@ -208,11 +222,23 @@ in
         background: #58534c;
       }
       #custom-mango-window, #mpris, #custom-bar-dnd, #pulseaudio, #cpu,
-      #custom-bar-sysinfo, #custom-bar-gpu, #clock, #tray {
+      #custom-bar-memory, #custom-bar-gpu, #clock, #tray {
         padding: 0 8px;
       }
-      #custom-bar-dnd.paused, #custom-bar-gpu {
+      #cpu {
+        padding-right: 5px;
+      }
+      #custom-bar-cpu-temperature {
+        padding-right: 8px;
+      }
+      #custom-bar-memory {
+        color: #6785a1;
+      }
+      #custom-bar-dnd.paused, #cpu, #custom-bar-cpu-temperature {
         color: #e17a3f;
+      }
+      #custom-bar-gpu {
+        color: #9a788f;
       }
       #pulseaudio {
         color: #879b5c;

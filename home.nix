@@ -116,6 +116,7 @@ in
         libva-utils
         mesa-demos
         vulkan-tools
+        nvtopPackages.nvidia
         zbar
         podman-compose
         adwaita-icon-theme
