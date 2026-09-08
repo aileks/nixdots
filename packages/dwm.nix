@@ -73,7 +73,7 @@ in
   (_: {
     NIX_LDFLAGS = "-lXcursor";
     # Keep upstream patches unchanged. Known overlaps are integrated by the
-    # local 6.6 fixup, while unexpected reject counts fail the build.
+    # local fixups, while unexpected reject counts fail the build.
     patchPhase = ''
       runHook prePatch
       ${lib.concatMapStringsSep "\n" applyPatch patchesBeforeAttachbelow}
@@ -96,7 +96,8 @@ in
         status2dBarpaddingSystray
         // {
           fuzz = 0;
-          expectedFailedHunks = 6;
+          # Six overlaps plus 6.8 color cleanup and property bounds checks.
+          expectedFailedHunks = 8;
         }
       )}
       ${applyPatch (
@@ -107,13 +108,14 @@ in
         }
       )}
       patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-6.6-fixups.diff}
+      patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-6.8-fixups.diff}
       patch -p1 --batch --forward --fuzz=0 < ${../config/dwm/patches/dwm-themed-cursors.diff}
       ${applyPatch (
         renamedScratchpads
         // {
           fuzz = 2;
-          # Two config hunks, Client/prototype overlaps, and one blank line.
-          expectedFailedHunks = 6;
+          # One config hunk, Client/prototype overlaps, and one blank line.
+          expectedFailedHunks = 5;
         }
       )}
       # Integrate declarations and preserve single-window assignment, release,
