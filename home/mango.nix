@@ -6,26 +6,14 @@
   ...
 }:
 let
-  monitorLayout = pkgs.writeShellApplication {
-    name = "monitor-layout";
+  openBtop = "${pkgs.wezterm}/bin/wezterm start --always-new-process -- ${lib.getExe config.programs.btop.package}";
+  resetWindowSize = pkgs.writeShellApplication {
+    name = "reset-window-size";
     runtimeInputs = [
-      pkgs.coreutils
       pkgs.jq
       pkgs.mango
-      pkgs.util-linux
-      pkgs.wlr-randr
     ];
-    text = builtins.readFile ../bin/monitor-layout;
-  };
-  desktopTag = pkgs.writeShellApplication {
-    name = "desktop-tag";
-    runtimeInputs = [
-      pkgs.coreutils
-      pkgs.jq
-      pkgs.mango
-      pkgs.util-linux
-    ];
-    text = builtins.readFile ../bin/desktop-tag;
+    text = builtins.readFile ../bin/reset-window-size;
   };
   tagBindings = lib.concatMapStringsSep "\n" (
     tag:
@@ -33,20 +21,33 @@ let
       number = toString tag;
     in
     ''
-      bind=SUPER,${number},spawn,desktop-tag view ${number}
-      bind=SUPER+CTRL,${number},spawn,desktop-tag toggleview ${number}
-      bind=SUPER+SHIFT,${number},spawn,desktop-tag tag ${number}
-      bind=SUPER+CTRL+SHIFT,${number},spawn,desktop-tag toggletag ${number}
+      bind=SUPER,${number},view,${number}
+      bind=SUPER+CTRL,${number},toggleview,${number}
+      bind=SUPER+SHIFT,${number},tagsilent,${number}
+      bind=SUPER+CTRL+SHIFT,${number},toggletag,${number}
     ''
   ) (lib.range 1 8);
-  bar = output: {
-    inherit output;
+  bar = {
+    output = "DP-4";
+    name = "main";
     layer = "top";
     position = "top";
     height = 25;
     spacing = 0;
-    modules-left = [ "ext/workspaces" ];
+    modules-left = [
+      "ext/workspaces"
+      "mpris"
+    ];
     modules-center = [ "custom/mango-window" ];
+    modules-right = [
+      "custom/bar-dnd"
+      "pulseaudio"
+      "cpu"
+      "custom/bar-sysinfo"
+      "custom/bar-gpu"
+      "clock"
+      "tray"
+    ];
     "ext/workspaces" = {
       format = "{name}";
       all-outputs = false;
@@ -56,7 +57,7 @@ let
     };
     "custom/mango-window" = {
       exec = ''
-        ${pkgs.mango}/bin/mmsg watch all-monitors | ${pkgs.jq}/bin/jq --unbuffered -c '.monitors[] | select(.name == "${output}") | {text: ((.active_client.title // "") | @html)}'
+        ${pkgs.mango}/bin/mmsg watch all-monitors | ${pkgs.jq}/bin/jq --unbuffered -c '.monitors[] | select(.name == "DP-4") | {text: ((.active_client.title // "") | @html)}'
       '';
       return-type = "json";
       restart-interval = 1;
@@ -66,37 +67,68 @@ let
     };
     "custom/bar-dnd" = {
       exec = "bar-dnd";
+      return-type = "json";
       interval = 1;
-      tooltip = false;
-      on-click = "dnd-toggle";
+      on-click = "notification-history";
+      on-click-right = "dnd-toggle";
       exec-on-event = true;
     };
-    "custom/bar-volume" = {
-      exec = "bar-volume";
-      interval = 2;
-      format = "  {}";
-      tooltip = false;
-      on-click = "BLOCK_BUTTON=1 bar-volume";
-      on-click-right = "BLOCK_BUTTON=3 bar-volume";
-      on-scroll-up = "BLOCK_BUTTON=4 bar-volume";
-      on-scroll-down = "BLOCK_BUTTON=5 bar-volume";
-      exec-on-event = true;
+    pulseaudio = {
+      format = "  {volume}%";
+      format-muted = "  mute";
+      tooltip-format = "{desc}\nVolume: {volume}%\nLeft: mute · Right: mixer · Scroll: volume";
+      on-click = "${pkgs.wireplumber}/bin/wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle";
+      on-click-right = "${pkgs.wezterm}/bin/wezterm start --always-new-process -- ${pkgs.wiremix}/bin/wiremix";
+      on-scroll-up = "${pkgs.wireplumber}/bin/wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+";
+      on-scroll-down = "${pkgs.wireplumber}/bin/wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%-";
+    };
+    cpu = {
+      interval = 5;
+      format = "CPU {usage}%";
+      on-click = openBtop;
     };
     "custom/bar-sysinfo" = {
       exec = "bar-sysinfo";
+      return-type = "json";
       interval = 10;
-      format = "  {}";
-      tooltip = false;
-      on-click = "BLOCK_BUTTON=1 bar-sysinfo";
-      exec-on-event = true;
+      on-click = openBtop;
     };
-    "custom/bar-clock" = {
-      exec = "bar-clock";
-      interval = 1;
-      format = "  {}";
-      tooltip = false;
-      on-click = "BLOCK_BUTTON=1 bar-clock";
-      exec-on-event = true;
+    "custom/bar-gpu" = {
+      exec = "bar-gpu";
+      return-type = "json";
+      interval = 5;
+      on-click = openBtop;
+    };
+    clock = {
+      format = "  {:%a %b %d %H:%M}";
+      format-alt = "  {:%Y-%m-%d %H:%M}";
+      tooltip-format = "<tt>{calendar}</tt>\nScroll: change month";
+      calendar = {
+        mode = "month";
+        on-scroll = 1;
+        format.today = "<span color='#e17a3f'><b>{}</b></span>";
+      };
+      actions = {
+        on-scroll-up = "shift_up";
+        on-scroll-down = "shift_down";
+      };
+    };
+    mpris = {
+      player = "playerctld";
+      format = "{status_icon} {dynamic}";
+      dynamic-order = [
+        "artist"
+        "title"
+      ];
+      dynamic-len = 38;
+      title-len = 38;
+      max-length = 40;
+      tooltip-format = "{player} ({status})\n{artist}\n{title}\n{album}\nLeft: play/pause · Middle: previous · Right: next";
+      status-icons = {
+        playing = "";
+        paused = "";
+        stopped = "";
+      };
     };
     tray = {
       icon-size = 16;
@@ -107,10 +139,12 @@ in
 {
   imports = [ inputs.mango.hmModules.mango ];
 
-  lib.nixdots.monitorLayout = monitorLayout;
+  services.playerctld.enable = true;
+  services.network-manager-applet.enable = true;
+  xsession.preferStatusNotifierItems = true;
+
   home.packages = [
-    monitorLayout
-    desktopTag
+    resetWindowSize
     pkgs.wmenu
   ];
 
@@ -136,53 +170,18 @@ in
     '';
   };
 
-  systemd.user.services.mango-monitors = {
-    Unit = {
-      Description = "Mango output layout and tag placement";
-      PartOf = [ "graphical-session.target" ];
-      After = [ "graphical-session.target" ];
-      ConditionEnvironment = "MANGO_INSTANCE_SIGNATURE";
-    };
-    Service = {
-      ExecStart = "${lib.getExe monitorLayout} watch";
-      Restart = "on-failure";
-      RestartSec = 1;
-    };
-    Install.WantedBy = [ "graphical-session.target" ];
-  };
-
   programs.waybar = {
     enable = true;
     systemd = {
       enable = true;
       targets = [ "graphical-session.target" ];
     };
-    settings = [
-      (
-        bar "DP-4"
-        // {
-          name = "main";
-          modules-right = [
-            "custom/bar-dnd"
-            "custom/bar-volume"
-            "custom/bar-sysinfo"
-            "custom/bar-clock"
-            "tray"
-          ];
-        }
-      )
-      (
-        bar "HDMI-A-2"
-        // {
-          name = "portrait";
-        }
-      )
-    ];
+    settings = [ bar ];
     style = ''
       * {
         font-family: "Iosevka Nerd Font";
         font-size: 11pt;
-        font-weight: 500;
+        font-weight: 600;
         border: none;
         border-radius: 0;
         min-height: 0;
@@ -208,12 +207,22 @@ in
         box-shadow: none;
         background: #58534c;
       }
-      #custom-mango-window, #custom-bar-volume, #custom-bar-sysinfo,
-      #custom-bar-clock, #tray {
+      #custom-mango-window, #mpris, #custom-bar-dnd, #pulseaudio, #cpu,
+      #custom-bar-sysinfo, #custom-bar-gpu, #clock, #tray {
         padding: 0 8px;
       }
-      #custom-bar-dnd {
+      #custom-bar-dnd.paused, #custom-bar-gpu {
         color: #e17a3f;
+      }
+      #pulseaudio {
+        color: #879b5c;
+      }
+      #pulseaudio.muted {
+        color: #b34a45;
+      }
+      #mpris.paused, #mpris.stopped, #custom-bar-gpu.unavailable,
+      #custom-bar-dnd.unavailable {
+        color: #58534c;
       }
       tooltip {
         color: #ddd5ca;

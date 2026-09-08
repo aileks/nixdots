@@ -1,10 +1,4 @@
-button="${BLOCK_BUTTON:-0}"
-
-case "$button" in
-  1) nohup wezterm start --always-new-process -- btop >/dev/null 2>&1 & ;;
-esac
-
-mem=$(free | awk '/^Mem/ { printf "%.0f", $3 / $2 * 100 }')
+read -r mem used total < <(free --bytes | awk '/^Mem/ { printf "%.0f %.1f %.1f\n", $3 / $2 * 100, $3 / 1024^3, $2 / 1024^3 }')
 temp=""
 for d in /sys/class/hwmon/hwmon*; do
   if [[ "$(cat "$d/name" 2>/dev/null)" == k10temp ]]; then
@@ -29,8 +23,14 @@ for d in /sys/class/hwmon/hwmon*; do
     break
   fi
 done
-printf '<span foreground="#6785A1">%s%%</span>' "$mem"
+text="<span foreground=\"#6785A1\">RAM $mem%</span>"
 if [[ -n $temp ]]; then
-  printf ' <span foreground="#E17A3F">%sC</span>' "$temp"
+  text+=" <span foreground=\"#E17A3F\">$temp°C</span>"
 fi
-printf '\n'
+storage=$(df -h --output=used,size,avail / | awk 'NR == 2 { printf "%s / %s used, %s free", $1, $2, $3 }')
+jq -cn --arg text "$text" \
+  --arg tooltip "RAM: $used / $total GiB
+CPU temperature: ${temp:-unavailable}${temp:+°C}
+Root filesystem: $storage
+Click: btop" \
+  '{text: $text, tooltip: $tooltip}'

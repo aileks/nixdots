@@ -1,0 +1,8 @@
+focused=$(mmsg get focusing-client)
+
+# Entering floating mode resets Mango's per-client tile proportions.
+if jq -e '.id != null and ((.is_floating or .is_fullscreen or .is_maximized) | not)' <<<"$focused" >/dev/null; then
+  id=$(jq -r '.id' <<<"$focused")
+  mmsg dispatch togglefloating "client,$id" >/dev/null
+  mmsg dispatch togglefloating "client,$id" >/dev/null
+fi

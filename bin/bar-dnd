@@ -1,7 +1,21 @@
 if ! pause_level=$(dunstctl get-pause-level 2>/dev/null); then
+  jq -cn '{text: "󰂛", class: "unavailable", tooltip: "Notifications unavailable"}'
   exit 0
 fi
 
+icon=""
+state="active"
+dnd="off"
 if ((pause_level > 0)); then
-  printf '\n'
+  icon=""
+  state="paused"
+  dnd="on"
 fi
+waiting=$(dunstctl count waiting 2>/dev/null || printf '?')
+history=$(dunstctl count history 2>/dev/null || printf '?')
+jq -cn --arg text "$icon" --arg class "$state" \
+  --arg tooltip "Do not disturb: $dnd
+Waiting: $waiting
+History: $history
+Left: history · Right: do not disturb" \
+  '{text: $text, class: $class, tooltip: $tooltip}'

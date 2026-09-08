@@ -1,6 +1,7 @@
 {
   config,
   lib,
+  osConfig,
   pkgs,
   ...
 }:
@@ -8,32 +9,30 @@
 let
   barDnd = pkgs.writeShellApplication {
     name = "bar-dnd";
-    runtimeInputs = [ pkgs.dunst ];
-    text = builtins.readFile ../bin/bar-dnd;
-  };
-  barVolume = pkgs.writeShellApplication {
-    name = "bar-volume";
-    runtimeInputs = with pkgs; [
-      gawk
-      wireplumber
+    runtimeInputs = [
+      pkgs.dunst
+      pkgs.jq
     ];
-    text = builtins.readFile ../bin/bar-volume;
+    text = builtins.readFile ../bin/bar-dnd;
   };
   barSysinfo = pkgs.writeShellApplication {
     name = "bar-sysinfo";
     runtimeInputs = [
       pkgs.coreutils
       pkgs.gawk
+      pkgs.jq
       pkgs.procps
-      pkgs.wezterm
-      config.programs.btop.package
     ];
     text = builtins.readFile ../bin/bar-sysinfo;
   };
-  barClock = pkgs.writeShellApplication {
-    name = "bar-clock";
-    runtimeInputs = with pkgs; [ coreutils ];
-    text = builtins.readFile ../bin/bar-clock;
+  barGpu = pkgs.writeShellApplication {
+    name = "bar-gpu";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.jq
+      (lib.getBin osConfig.hardware.nvidia.package)
+    ];
+    text = builtins.readFile ../bin/bar-gpu;
   };
   powerMenu = pkgs.writeShellApplication {
     name = "power-menu";
@@ -269,15 +268,6 @@ let
       exec hyprpicker --autocopy --format hex --no-fancy
     '';
   };
-  monitorMenu = pkgs.writeShellApplication {
-    name = "monitor-menu";
-    runtimeInputs = [
-      desktopFeedback
-      config.lib.nixdots.monitorLayout
-      pkgs.wmenu
-    ];
-    text = builtins.readFile ../bin/monitor-menu;
-  };
   desktopActions = pkgs.writeShellApplication {
     name = "desktop-actions";
     runtimeInputs = [
@@ -286,7 +276,6 @@ let
       reminder
       notificationHistory
       calculate
-      monitorMenu
       pkgs.wmenu
       pkgs.networkmanager_dmenu
     ];
@@ -296,9 +285,8 @@ in
 {
   home.packages = [
     barDnd
-    barVolume
     barSysinfo
-    barClock
+    barGpu
     powerMenu
     desktopFeedback
     homeBackup
@@ -318,7 +306,6 @@ in
     notificationHistory
     calculate
     colorPicker
-    monitorMenu
     desktopActions
   ];
 
