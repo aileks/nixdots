@@ -1,0 +1,72 @@
+diff --git a/menu.h b/menu.h
+--- a/menu.h
++++ b/menu.h
+@@ -33,5 +33,7 @@ struct menu {
+ 	// Whether the menu appears at the bottom of the screen
+ 	bool bottom;
++	// Whether the menu is centered at a fixed width
++	bool centered;
+ 	// The function used to match menu items
+ 	int (*strncmp)(const char *, const char *, size_t);
+ 	// Whether the input is a password
+diff --git a/menu.c b/menu.c
+--- a/menu.c
++++ b/menu.c
+@@ -92,14 +92,17 @@ static bool parse_color(const char *color, uint32_t *result) {
+ // Parse menu options from command line arguments.
+ void menu_getopts(struct menu *menu, int argc, char *argv[]) {
+ 	const char *usage =
+-		"Usage: wmenu [-biPv] [-f font] [-l lines] [-o output] [-p prompt]\n"
++		"Usage: wmenu [-bciPv] [-f font] [-l lines] [-o output] [-p prompt]\n"
+ 		"\t[-N color] [-n color] [-M color] [-m color] [-S color] [-s color]\n";
+ 
+ 	int opt;
+-	while ((opt = getopt(argc, argv, "bhiPvf:l:o:p:N:n:M:m:S:s:")) != -1) {
++	while ((opt = getopt(argc, argv, "bchiPvf:l:o:p:N:n:M:m:S:s:")) != -1) {
+ 		switch (opt) {
+ 		case 'b':
+ 			menu->bottom = true;
+ 			break;
++		case 'c':
++			menu->centered = true;
++			break;
+ 		case 'i':
+ 			menu->strncmp = strncasecmp;
+diff --git a/wayland.c b/wayland.c
+--- a/wayland.c
++++ b/wayland.c
+@@ -454,8 +454,11 @@ void menu_run(struct menu *menu) {
+ 		anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP;
+ 	}
+ 
++	if (menu->centered) {
++		anchor = 0;
++	}
+ 	zwlr_layer_surface_v1_set_anchor(layer_surface, anchor);
+-	zwlr_layer_surface_v1_set_size(layer_surface, 0, menu->height);
++	zwlr_layer_surface_v1_set_size(layer_surface, menu->centered ? 720 : 0, menu->height);
+ 	zwlr_layer_surface_v1_set_exclusive_zone(layer_surface, -1);
+ 	zwlr_layer_surface_v1_set_keyboard_interactivity(layer_surface, true);
+ 	zwlr_layer_surface_v1_add_listener(layer_surface, &layer_surface_listener, context);
+diff --git a/docs/wmenu.1.scd b/docs/wmenu.1.scd
+--- a/docs/wmenu.1.scd
++++ b/docs/wmenu.1.scd
+@@ -6,7 +6,7 @@ wmenu - dynamic menu for Wayland
+ 
+ # SYNOPSIS
+ 
+-*wmenu* [-biPv] \
++*wmenu* [-bciPv] \
+   [-f _font_] \
+   [-l _lines_] \
+   [-o _output_] \
+@@ -33,6 +33,9 @@ $PATH and runs the result.
+ *-b*
+ 	wmenu appears at the bottom of the screen.
+ 
++*-c*
++	wmenu appears centered, 720 logical pixels wide. Overrides *-b*.
++
+ *-i*
+ 	wmenu matches menu items case insensitively.
+ 
