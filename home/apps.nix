@@ -60,7 +60,28 @@ in
     enableZshIntegration = false;
     settings = {
       enable_wayland = true;
-      font = lib.generators.mkLuaInline ''wezterm.font("IosevkaTerm Nerd Font")'';
+      font = lib.generators.mkLuaInline ''wezterm.font("IosevkaTerm Nerd Font", { weight = "Regular" })'';
+      # Automatic rules select Thin for dim text and ExtraBold for bold text.
+      font_rules = [
+        {
+          intensity = "Bold";
+          italic = true;
+          font = lib.generators.mkLuaInline ''wezterm.font("IosevkaTerm Nerd Font", { weight = "Bold", style = "Italic" })'';
+        }
+        {
+          intensity = "Bold";
+          italic = false;
+          font = lib.generators.mkLuaInline ''wezterm.font("IosevkaTerm Nerd Font", { weight = "Bold" })'';
+        }
+        {
+          italic = true;
+          font = lib.generators.mkLuaInline ''wezterm.font("IosevkaTerm Nerd Font", { weight = "Regular", style = "Italic" })'';
+        }
+        {
+          italic = false;
+          font = lib.generators.mkLuaInline ''wezterm.font("IosevkaTerm Nerd Font", { weight = "Regular" })'';
+        }
+      ];
       font_size = 14;
       window_background_opacity = 0.95;
       window_decorations = "NONE";
