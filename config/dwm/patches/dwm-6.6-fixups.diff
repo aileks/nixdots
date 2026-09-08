@@ -113,7 +113,7 @@
  	else if ((c = swallowingclient(ev->window)))
  		unmanage(c->swallowing, 1);
  }
-@@ -2157,7 +2174,20 @@
+@@ -2157,7 +2174,18 @@
  {
  	selmon->showbar = selmon->pertag->showbars[selmon->pertag->curtag] = !selmon->showbar;
  	updatebarpos(selmon);
@@ -130,8 +130,6 @@
 +		}
 +		XConfigureWindow(dpy, systray->win, CWY, &wc);
 +	}
-+	XMoveResizeWindow(dpy, selmon->barwin, selmon->wx + sp, selmon->by + vp,
-+	                 selmon->ww - 2 * sp, bh);
  	arrange(selmon);
  }
  
@@ -150,12 +148,14 @@
 
 --- a/dwm.c
 +++ b/dwm.c
-@@ -446,3 +446,28 @@
+@@ -446,3 +446,30 @@
 -		else if (ev->x > selmon->ww - (int)TEXTW(stext) - getsystraywidth())
 -			click = ClkStatusText;
 -		else
-+		else if (ev->x > selmon->ww - statusw - (int)getsystraywidth()) {
-+			x = selmon->ww - statusw - (int)getsystraywidth();
++		else if (ev->x > selmon->ww - statusw -
++		         (showsystray && !systrayonleft && selmon == systraytomon(selmon) ? (int)getsystraywidth() : 0)) {
++			x = selmon->ww - statusw -
++			    (showsystray && !systrayonleft && selmon == systraytomon(selmon) ? (int)getsystraywidth() : 0);
 +			click = ClkStatusText;
 +
 +			char *text, *s, ch;
@@ -210,3 +210,17 @@
 +
 +void
 +spawn(const Arg *arg)
+
+--- a/dwm.c
++++ b/dwm.c
+@@ -963,1 +963,3 @@
+-	x = m->ww - w - getsystraywidth();
++	x = m->ww - w;
++	if (showsystray && m == systraytomon(m) && !systrayonleft)
++		x -= getsystraywidth();
+@@ -1691,1 +1692,1 @@
+-	XMoveResizeWindow(dpy, m->barwin, m->wx + sp, m->by + vp, m->ww -  2 * sp, bh);
++	XMoveResizeWindow(dpy, m->barwin, m->wx + sp, m->by + vp, w - 2 * sp, bh);
+@@ -2361,1 +2362,1 @@
+-		m->barwin = XCreateWindow(dpy, root, m->wx + sp, m->by + vp, m->ww - 2 * sp, bh, 0, DefaultDepth(dpy, screen),
++		m->barwin = XCreateWindow(dpy, root, m->wx + sp, m->by + vp, w - 2 * sp, bh, 0, DefaultDepth(dpy, screen),
