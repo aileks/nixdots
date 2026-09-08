@@ -69,6 +69,7 @@ let
       return-type = "json";
       interval = 1;
       on-click = "notification-history";
+      on-click-middle = "${pkgs.dunst}/bin/dunstctl history-clear";
       on-click-right = "dnd-toggle";
       exec-on-event = true;
     };
