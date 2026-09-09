@@ -57,6 +57,7 @@ in
         _7zz
         tree
         gnumake
+        bubblewrap
         cmake
         (lib.hiPrio gcc)
         clang
@@ -131,7 +132,7 @@ in
         dunst
         wiremix
         wireplumber
-        bubblewrap
+        zig
       ])
       ++ [
         zenTwilight
