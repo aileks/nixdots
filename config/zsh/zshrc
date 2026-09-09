@@ -1,5 +1,5 @@
 # PATH
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.local/share/odin:$HOME/.local/share/ols:$PATH"
 
 # Core environment
 export EDITOR="nvim"
