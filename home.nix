@@ -24,7 +24,7 @@ let
   };
   cinderGroveGtk = pkgs.cinder-grove-gtk;
   papirusCinderGrove = pkgs.papirus-cinder-grove;
-  zenBrowser = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta;
+  zenBrowser = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.default;
   helium =
     (inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
       flags = [ "--ozone-platform=wayland" ];
