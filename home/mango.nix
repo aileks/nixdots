@@ -26,7 +26,7 @@ let
       bind=SUPER+SHIFT,${number},tagsilent,${number}
       bind=SUPER+CTRL+SHIFT,${number},toggletag,${number}
     ''
-  ) (lib.range 1 8);
+  ) (lib.range 1 7);
   bar = {
     output = "DP-4";
     name = "main";
