@@ -194,7 +194,7 @@ in
     settings = [ bar ];
     style = ''
       * {
-        font-family: "Iosevka Nerd Font Propo";
+        font-family: "Iosevka Nerd Font";
         font-size: 11pt;
         font-weight: 600;
         border: none;

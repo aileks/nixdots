@@ -75,6 +75,7 @@ in
         unzip
         wget
         zip
+        hyprpicker
         zoxide
         starship
         ivpn-ui
