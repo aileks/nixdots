@@ -24,7 +24,7 @@ let
   };
   cinderGroveGtk = pkgs.cinder-grove-gtk;
   papirusCinderGrove = pkgs.papirus-cinder-grove;
-  zenTwilight = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.twilight;
+  zenBrowser = inputs.zen-browser.packages.${pkgs.stdenv.hostPlatform.system}.beta;
   helium =
     (inputs.helium.packages.${pkgs.stdenv.hostPlatform.system}.default.override {
       flags = [ "--ozone-platform=wayland" ];
@@ -142,7 +142,7 @@ in
         zig
       ])
       ++ [
-        zenTwilight
+        zenBrowser
         helium
       ];
 
@@ -156,7 +156,6 @@ in
     };
 
     file = {
-      ".local/bin/zen-browser-twilight".source = "${zenTwilight}/bin/zen-twilight";
       ".zshrc".source = createSymlink "zsh/zshrc";
       ".antidote/antidote.zsh".source = "${pkgs.antidote}/share/antidote/antidote.zsh";
     };
@@ -244,7 +243,7 @@ in
         let
           forTypes = desktop: types: lib.genAttrs types (_: [ desktop ]);
         in
-        forTypes "zen-twilight.desktop" [
+        forTypes "zen-beta.desktop" [
           "text/html"
           "application/xhtml+xml"
           "x-scheme-handler/http"
