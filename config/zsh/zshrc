@@ -53,6 +53,7 @@ alias ff="fastfetch"
 alias lg="lazygit"
 alias vim="nvim"
 alias docker="podman"
+alias ns="nix-search-tv print | fzf --preview 'nix-search-tv preview {}' --scheme history"
 
 # Quit Yazi into its current directory; Q leaves the shell directory unchanged.
 y() {

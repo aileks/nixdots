@@ -89,17 +89,23 @@ in
         nixfmt
         tree-sitter
         lazygit
+        isd
+        gdu
+        smartmontools
+        nvme-cli
+        bluetui
         duckdb
         postgresql_18
         cava
         fastfetch
         qalculate-gtk
+        libqalculate
         file-roller
         gh
         gnome-disk-utility
         imv
-        papers
         bitwarden-desktop
+        bitwarden-cli
         signal-desktop
         fastmail-desktop
         onlyoffice-desktopeditors
@@ -120,6 +126,7 @@ in
         nvtopPackages.nvidia
         zbar
         podman-compose
+        podman-tui
         adwaita-icon-theme
         papirus-cinder-grove
         qt6Packages.qt6ct
@@ -304,17 +311,18 @@ in
           "video/x-ms-wmv"
           "video/x-theora+ogg"
         ]
-        // forTypes "org.gnome.Papers.desktop" [
+        // forTypes "org.pwmt.zathura-pdf-mupdf.desktop" [
           "application/pdf"
-          "application/x-bzpdf"
-          "application/x-gzpdf"
-          "application/x-xzpdf"
+        ]
+        // forTypes "org.pwmt.zathura-cb.desktop" [
           "application/vnd.comicbook+zip"
           "application/vnd.comicbook-rar"
           "application/x-cb7"
           "application/x-cbr"
           "application/x-cbt"
           "application/x-cbz"
+        ]
+        // forTypes "org.pwmt.zathura-djvu.desktop" [
           "image/vnd.djvu"
           "image/vnd.djvu+multipage"
         ]

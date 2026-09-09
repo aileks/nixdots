@@ -102,6 +102,7 @@
               libxml2
               lua
               nixfmt
+              python3
               rsync
               shellcheck
               shfmt
@@ -121,6 +122,7 @@
             shfmt -d -i 2 -ci -bn bin/*
             zsh -n config/zsh/zshrc
             zsh -n config/zsh/cinder-grove.zsh
+            python3 -c 'import pathlib; [compile(p.read_text(), str(p), "exec") for p in pathlib.Path("config/qutebrowser").glob("*.py")]'
             find config/nvim -type f -name '*.lua' -print0 | xargs -0 -r -n 1 luac -p
             xmllint --noout config/fontconfig/fonts.conf config/bat/themes/cinder-grove.tmTheme
 

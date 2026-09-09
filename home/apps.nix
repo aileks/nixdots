@@ -1,36 +1,36 @@
 {
   config,
+  installation,
   lib,
   pkgs,
   ...
 }:
 
 let
-  # Palette and roles from Projects/cinder-grove.nvim.
-  colors = {
-    background = "#131210";
-    container = "#1B1916";
-    surface = "#23201C";
-    visual = "#3E3A34";
-    muted = "#58534C";
-    subtle = "#9A938A";
-    secondary = "#ACA49B";
-    text = "#BBB3A9";
-    bright = "#DDD5CA";
-    orange = "#E17A3F";
-    green = "#879B5C";
-    red = "#B34A45";
-    yellow = "#D9A441";
-    blue = "#6785A1";
-    purple = "#9A788F";
-    cyan = "#58918C";
-  };
+  colors = import ../theme/cinder-grove.nix;
   border = {
     fg = colors.orange;
   };
   selected = {
     fg = colors.bright;
     bg = colors.visual;
+  };
+  quteBitwarden = pkgs.writeShellApplication {
+    name = "qute-bitwarden";
+    runtimeInputs = with pkgs; [
+      python3
+      bitwarden-cli
+      keyutils
+      pinentry-gnome3
+      wmenu
+      coreutils
+    ];
+    text = ''exec python3 ${../config/qutebrowser}/bitwarden.py "$@"'';
+  };
+  quteReadeck = pkgs.writeShellApplication {
+    name = "qute-readeck";
+    runtimeInputs = [ pkgs.python3 ];
+    text = ''exec python3 ${../config/qutebrowser/readeck.py} "$@"'';
   };
   fileLocations = pkgs.writeShellApplication {
     name = "file-locations";
@@ -53,6 +53,270 @@ in
     pkgs.pcmanfm
     pkgs.wl-clipboard
   ];
+
+  programs.nh = {
+    enable = true;
+    osFlake = "${config.home.homeDirectory}/${installation.repositoryDirectory}";
+    clean.enable = false;
+  };
+
+  programs.nix-search-tv = {
+    enable = true;
+    settings.indexes = [
+      "nixpkgs"
+      "nixos"
+      "home-manager"
+    ];
+  };
+
+  programs.zathura = {
+    enable = true;
+    options = {
+      font = "IosevkaTerm Nerd Font 12";
+      default-bg = colors.background;
+      default-fg = colors.text;
+      statusbar-bg = colors.container;
+      statusbar-fg = colors.text;
+      inputbar-bg = colors.container;
+      inputbar-fg = colors.text;
+      completion-bg = colors.surface;
+      completion-fg = colors.text;
+      completion-group-bg = colors.container;
+      completion-group-fg = colors.orange;
+      completion-highlight-bg = colors.visual;
+      completion-highlight-fg = colors.bright;
+      notification-bg = colors.container;
+      notification-fg = colors.text;
+      notification-error-bg = colors.container;
+      notification-error-fg = colors.red;
+      notification-warning-bg = colors.container;
+      notification-warning-fg = colors.yellow;
+      highlight-color = "rgba(217,164,65,0.5)";
+      highlight-active-color = "rgba(225,122,63,0.5)";
+      highlight-fg = colors.background;
+      recolor = false;
+      recolor-darkcolor = colors.text;
+      recolor-lightcolor = colors.background;
+      recolor-keephue = true;
+      recolor-reverse-video = true;
+    };
+  };
+
+  programs.qutebrowser = {
+    enable = true;
+    loadAutoconfig = true;
+    keyBindings.normal = {
+      ",p" = "spawn --userscript ${lib.getExe quteBitwarden}";
+      ",u" = "spawn --userscript ${lib.getExe quteBitwarden} --username-only";
+      ",P" = "spawn --userscript ${lib.getExe quteBitwarden} --password-only";
+      ",t" = "spawn --userscript ${lib.getExe quteBitwarden} --totp-only";
+      ",r" = "spawn --userscript ${lib.getExe quteReadeck}";
+    };
+    greasemonkey = [
+      (pkgs.fetchurl {
+        url = "https://raw.githubusercontent.com/afreakk/greasemonkeyscripts/1ab9f20435cdc39c6551e940fb7788d3207161e6/youtube_adblock.js";
+        hash = "sha256-AyD9VoLJbKPfqmDEwFIEBMl//EIV/FYnZ1+ona+VU9c=";
+      })
+      (pkgs.fetchurl {
+        url = "https://raw.githubusercontent.com/afreakk/greasemonkeyscripts/1ab9f20435cdc39c6551e940fb7788d3207161e6/youtube_sponsorblock.js";
+        hash = "sha256-2sNlWL0KOAOMe2pllyKVBT4gAICokyDOuHPkVfUrYN4=";
+      })
+      (pkgs.fetchurl {
+        url = "https://cdn2.frankerfacez.com/script/ffz_injector.user.js";
+        hash = "sha256-KKfPQtHHkpoV1m6kDnFHxm9HXH5/ubc5lUk+P0LPeLY=";
+      })
+    ];
+    settings = {
+      fonts.default_family = "IosevkaTerm Nerd Font";
+      fonts.default_size = "12pt";
+      content.blocking.method = "both";
+      colors = {
+        webpage.preferred_color_scheme = "dark";
+        webpage.darkmode.enabled = false;
+        completion = {
+          fg = colors.text;
+          even.bg = colors.container;
+          odd.bg = colors.surface;
+          match.fg = colors.orange;
+          category = {
+            bg = colors.background;
+            fg = colors.orange;
+            border.top = colors.background;
+            border.bottom = colors.background;
+          };
+          item.selected = {
+            bg = colors.visual;
+            fg = colors.bright;
+            match.fg = colors.orange;
+            border.top = colors.orange;
+            border.bottom = colors.orange;
+          };
+          scrollbar = {
+            bg = colors.container;
+            fg = colors.muted;
+          };
+        };
+        hints = {
+          bg = colors.orange;
+          fg = colors.background;
+          match.fg = colors.surface;
+        };
+        keyhint = {
+          bg = colors.container;
+          fg = colors.text;
+          suffix.fg = colors.orange;
+        };
+        prompts = {
+          bg = colors.container;
+          fg = colors.text;
+          border = "1px solid ${colors.orange}";
+          selected = {
+            bg = colors.visual;
+            fg = colors.bright;
+          };
+        };
+        messages = {
+          error = {
+            bg = colors.container;
+            fg = colors.red;
+            border = colors.red;
+          };
+          warning = {
+            bg = colors.container;
+            fg = colors.yellow;
+            border = colors.yellow;
+          };
+          info = {
+            bg = colors.container;
+            fg = colors.text;
+            border = colors.blue;
+          };
+        };
+        downloads = {
+          bar.bg = colors.background;
+          start = {
+            bg = colors.blue;
+            fg = colors.background;
+          };
+          stop = {
+            bg = colors.green;
+            fg = colors.background;
+          };
+          error = {
+            bg = colors.red;
+            fg = colors.background;
+          };
+        };
+        tabs = {
+          bar.bg = colors.background;
+          even = {
+            bg = colors.container;
+            fg = colors.text;
+          };
+          odd = {
+            bg = colors.surface;
+            fg = colors.text;
+          };
+          selected = {
+            even = {
+              bg = colors.orange;
+              fg = colors.background;
+            };
+            odd = {
+              bg = colors.orange;
+              fg = colors.background;
+            };
+          };
+          pinned = {
+            even = {
+              bg = colors.container;
+              fg = colors.text;
+            };
+            odd = {
+              bg = colors.surface;
+              fg = colors.text;
+            };
+            selected = {
+              even = {
+                bg = colors.orange;
+                fg = colors.background;
+              };
+              odd = {
+                bg = colors.orange;
+                fg = colors.background;
+              };
+            };
+          };
+          indicator = {
+            start = colors.blue;
+            stop = colors.green;
+            error = colors.red;
+          };
+        };
+        statusbar = {
+          normal = {
+            bg = colors.background;
+            fg = colors.text;
+          };
+          private = {
+            bg = colors.surface;
+            fg = colors.purple;
+          };
+          command = {
+            bg = colors.container;
+            fg = colors.text;
+            private = {
+              bg = colors.surface;
+              fg = colors.purple;
+            };
+          };
+          insert = {
+            bg = colors.green;
+            fg = colors.background;
+          };
+          passthrough = {
+            bg = colors.blue;
+            fg = colors.background;
+          };
+          caret = {
+            bg = colors.purple;
+            fg = colors.background;
+            selection = {
+              bg = colors.visual;
+              fg = colors.bright;
+            };
+          };
+          progress.bg = colors.orange;
+          url = {
+            fg = colors.text;
+            error.fg = colors.red;
+            warn.fg = colors.yellow;
+            hover.fg = colors.orange;
+            success.http.fg = colors.text;
+            success.https.fg = colors.green;
+          };
+        };
+        contextmenu = {
+          menu = {
+            bg = colors.container;
+            fg = colors.text;
+          };
+          selected = {
+            bg = colors.visual;
+            fg = colors.bright;
+          };
+          disabled = {
+            bg = colors.container;
+            fg = colors.muted;
+          };
+        };
+        tooltip = {
+          bg = colors.container;
+          fg = colors.text;
+        };
+      };
+    };
+  };
 
   programs.wezterm = {
     enable = true;

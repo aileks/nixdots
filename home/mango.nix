@@ -102,14 +102,14 @@ let
     };
     "custom/bar-memory" = {
       exec = "bar-memory";
-      format = "󰍛  {}";
+      format = "  {}";
       return-type = "json";
       interval = 10;
       on-click = openBtop;
     };
     "custom/bar-gpu" = {
       exec = "bar-gpu";
-      format = "󰢮  {}";
+      format = "󰾲  {}";
       return-type = "json";
       interval = 5;
       on-click = "${pkgs.wezterm}/bin/wezterm start --always-new-process -- ${lib.getExe pkgs.nvtopPackages.nvidia}";
@@ -194,7 +194,7 @@ in
     settings = [ bar ];
     style = ''
       * {
-        font-family: "Iosevka Nerd Font";
+        font-family: "Iosevka Nerd Font Propo";
         font-size: 11pt;
         font-weight: 600;
         border: none;
