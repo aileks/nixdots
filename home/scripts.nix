@@ -270,11 +270,19 @@ let
   colorPicker = pkgs.writeShellApplication {
     name = "color-picker";
     runtimeInputs = [
-      pkgs.hyprpicker
+      pkgs.coreutils
+      pkgs.grim
+      pkgs.slurp
       pkgs.wl-clipboard
     ];
     text = ''
-      exec hyprpicker --autocopy --format hex --no-fancy
+      geometry=$(slurp -p </dev/null) || exit 0
+      # A single pixel at scale 1 ends the PPM image with three RGB bytes.
+      pixel=$(grim -s 1 -g "$geometry" -t ppm - | tail -c 3 | od -An -tu1)
+      read -r red green blue <<< "$pixel"
+      printf -v color '#%02X%02X%02X' "$red" "$green" "$blue"
+      printf '%s' "$color" | wl-copy
+      printf '%s\n' "$color"
     '';
   };
   desktopActions = pkgs.writeShellApplication {
