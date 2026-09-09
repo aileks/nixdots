@@ -276,12 +276,13 @@ let
       pkgs.wl-clipboard
     ];
     text = ''
-      geometry=$(slurp -p </dev/null) || exit 0
+      # Keep the pixel unchanged even if capture precedes the overlay's removal.
+      geometry=$(slurp -p -b '#00000000' -c '#00000000' -s '#00000000' </dev/null) || exit 0
       # A single pixel at scale 1 ends the PPM image with three RGB bytes.
       pixel=$(grim -s 1 -g "$geometry" -t ppm - | tail -c 3 | od -An -tu1)
       read -r red green blue <<< "$pixel"
       printf -v color '#%02X%02X%02X' "$red" "$green" "$blue"
-      printf '%s' "$color" | wl-copy
+      wl-copy --type text/plain -- "$color"
       printf '%s\n' "$color"
     '';
   };
