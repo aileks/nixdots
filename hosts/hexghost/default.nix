@@ -31,8 +31,15 @@
   programs.appimage = {
     enable = true;
     binfmt = true;
-  };
 
+    package = pkgs.appimage-run.override {
+      extraPkgs =
+        pkgs: with pkgs; [
+          mpv-unwrapped
+          libass
+        ];
+    };
+  };
   services.ivpn.enable = true;
 
   services.hardware.openrgb = {
