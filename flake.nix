@@ -3,10 +3,14 @@
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-unstable";
-    self.submodules = true;
 
     home-manager = {
       url = "github:nix-community/home-manager/master";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    doom-emacs = {
+      url = "github:marienz/nix-doom-emacs-unstraightened";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -19,10 +23,7 @@
       url = "github:oxcl/nix-flake-helium-browser";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    mango = {
-      url = "github:mangowm/mango/0.16.3";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
+
   };
 
   outputs =
@@ -36,17 +37,19 @@
       system = "x86_64-linux";
       installation = import ./installation.nix;
       localPackageNames = [
-        "wmenu"
+        "dmenu"
+        "oxwm"
         "cinder-grove-gtk"
         "papirus-cinder-grove"
-        "fastmail-desktop"
         "nvidia-vaapi-driver"
+        "sql-language-server"
       ];
       overlay = final: prev: {
-        wmenu = final.callPackage ./packages/wmenu.nix { wmenu = prev.wmenu; };
+        dmenu = final.callPackage ./packages/dmenu.nix { dmenu = prev.dmenu; };
+        oxwm = final.callPackage ./packages/oxwm.nix { oxwm = prev.oxwm; };
         cinder-grove-gtk = final.callPackage ./packages/cinder-grove-gtk.nix { };
         papirus-cinder-grove = final.callPackage ./packages/papirus-cinder-grove.nix { };
-        fastmail-desktop = final.callPackage ./packages/fastmail-desktop.nix { };
+        sql-language-server = final.callPackage ./packages/sql-language-server.nix { };
         nvidia-vaapi-driver = prev.nvidia-vaapi-driver.overrideAttrs (
           finalAttrs: previousAttrs: {
             version = "0.0.18";
@@ -94,46 +97,41 @@
       hostChecks = nixpkgs.lib.mapAttrs' (
         hostName: host: nixpkgs.lib.nameValuePair "nixos-${hostName}" host.config.system.build.toplevel
       ) hosts;
-      sourceCheck =
-        pkgs.runCommand "nixdots-source-check"
-          {
-            nativeBuildInputs = with pkgs; [
-              findutils
-              libxml2
-              lua
-              nixfmt
-              python3
-              rsync
-              shellcheck
-              shfmt
-              stdenv.cc
-              util-linux
-              zsh
-            ];
-          }
-          ''
-            cp -R ${self} source
-            chmod -R u+w source
-            cd source
+      home = hosts.hexghost.config.home-manager.users.${installation.user.name};
+      scripts = home.lib.nixdots.scripts;
+      helpers = {
+        install = installer;
+        oxwm-session = hosts.hexghost.config.system.build.oxwmSession;
+        configure-monitors = home.lib.nixdots.monitors;
+      };
+      generatedChecks = import ./checks {
+        inherit
+          pkgs
+          self
+          scripts
+          helpers
+          home
+          ;
+      };
+      installer = import ./packages/install.nix { inherit pkgs; };
 
-            find . -path ./config/nvim -prune -o -name '*.nix' -print0 \
-              | xargs -0 -r nixfmt --check
-            shellcheck --shell=bash bin/*
-            shfmt -d -i 2 -ci -bn bin/*
-            zsh -n config/zsh/zshrc
-            zsh -n config/zsh/cinder-grove.zsh
-            python3 -c 'import pathlib; [compile(p.read_text(), str(p), "exec") for p in pathlib.Path("config/qutebrowser").glob("*.py")]'
-            find config/nvim -type f -name '*.lua' -print0 | xargs -0 -r -n 1 luac -p
-            xmllint --noout config/fontconfig/fonts.conf config/bat/themes/cinder-grove.tmTheme
-
-            touch "$out"
-          '';
     in
     {
       lib = { inherit installation; };
       overlays.default = overlay;
-      packages.${system} = localPackages;
-      checks.${system} = localPackages // hostChecks // { inherit sourceCheck; };
+      packages.${system} =
+        localPackages
+        // scripts
+        // helpers
+        // {
+          doom-emacs = home.programs.doom-emacs.finalEmacsPackage;
+          neovim = home.programs.neovim.finalPackage;
+        };
+      apps.${system}.install = {
+        type = "app";
+        program = "${installer}/bin/nixdots-install";
+      };
+      checks.${system} = localPackages // hostChecks // generatedChecks;
       formatter.${system} = pkgs.nixfmt-tree;
 
       nixosConfigurations = hosts;

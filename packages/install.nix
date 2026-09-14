@@ -1,0 +1,185 @@
+{ pkgs }:
+pkgs.writeShellApplication {
+  name = "nixdots-install";
+  runtimeInputs = with pkgs; [
+    coreutils
+    gnugrep
+    git
+    jq
+    nix
+    nixos-install-tools
+    util-linux
+  ];
+  text = pkgs.lib.removeSuffix "\n" ''
+    set -Eeuo pipefail
+
+    export NIX_CONFIG="''${NIX_CONFIG-}"$'\nextra-experimental-features = nix-command flakes'
+
+    target_root=/mnt
+    should_only_check=0
+    machine_hostname=
+    efi_variables_path=''${NIXDOTS_EFI_VARIABLES_PATH:-/sys/firmware/efi/efivars}
+
+    usage() {
+      cat <<'EOF'
+    Usage: sudo nix run .#install -- [--root PATH] [--hostname NAME] [--check-only]
+
+    Install the configured system into an already mounted NixOS target. The script never
+    partitions, formats, or reboots the machine.
+    EOF
+    }
+
+    fail() {
+      printf 'error: %s\n' "$*" >&2
+      exit 1
+    }
+
+    while (($# > 0)); do
+      case "$1" in
+        --root)
+          (($# >= 2)) || fail "--root requires a path"
+          target_root=$2
+          shift 2
+          ;;
+        --check-only)
+          should_only_check=1
+          shift
+          ;;
+        --hostname)
+          (($# >= 2)) || fail "--hostname requires a name"
+          machine_hostname=$2
+          shift 2
+          ;;
+        --help | -h)
+          usage
+          exit 0
+          ;;
+        *)
+          fail "unknown argument: $1"
+          ;;
+      esac
+    done
+
+    ((EUID == 0)) || fail "run this installer as root"
+    [[ -d $efi_variables_path ]] || fail "the live ISO must be booted in UEFI mode"
+
+    for command in blkid chown findmnt git install jq nix nixos-enter nixos-generate-config nixos-install readlink swapon; do
+      command -v "$command" >/dev/null || fail "required command is missing: $command"
+    done
+
+    target_root=$(readlink -f "$target_root")
+    [[ -d $target_root ]] || fail "target root does not exist: $target_root"
+    [[ $target_root != / ]] || fail "target root must not be the running system"
+
+    repo_root=$(realpath -- "''${NIXDOTS_SOURCE:-$PWD}")
+    installation_json=$(nix eval --json "$repo_root#lib.installation") \
+      || fail "could not read installation settings from the flake"
+
+    user_name=$(jq -er '.user.name' <<<"$installation_json")
+    user_uid=$(jq -er '.user.uid' <<<"$installation_json")
+    user_gid=$(jq -er '.user.gid' <<<"$installation_json")
+    user_home=$(jq -er '.user.homeDirectory' <<<"$installation_json")
+    repository_directory=$(jq -er '.repositoryDirectory' <<<"$installation_json")
+    root_label=$(jq -er '.storage.root.label' <<<"$installation_json")
+    root_filesystem_type=$(jq -er '.storage.root.fsType' <<<"$installation_json")
+    root_mount_point=$(jq -er '.storage.root.mountPoint' <<<"$installation_json")
+    boot_label=$(jq -er '.storage.boot.label' <<<"$installation_json")
+    boot_filesystem_type=$(jq -er '.storage.boot.fsType' <<<"$installation_json")
+    boot_mount_point=$(jq -er '.storage.boot.mountPoint' <<<"$installation_json")
+    swap_label=$(jq -er '.storage.swap.label' <<<"$installation_json")
+
+    target_home="''${target_root%/}$user_home"
+    expected_repo="$target_home/$repository_directory"
+    [[ $repo_root == "$expected_repo" ]] \
+      || fail "clone the repository to $expected_repo before running this script"
+
+    declare -A label_devices
+    for label in "$root_label" "$boot_label" "$swap_label"; do
+      mapfile -t devices < <(blkid -t "LABEL=$label" -o device)
+      ((''${#devices[@]} == 1)) \
+        || fail "expected exactly one filesystem labeled '$label', found ''${#devices[@]}"
+      label_devices[$label]=$(readlink -f "''${devices[0]}")
+    done
+
+    [[ ''${label_devices[$root_label]} != "''${label_devices[$boot_label]}" ]] \
+      || fail "$root_label and $boot_label labels resolve to the same device"
+    [[ ''${label_devices[$root_label]} != "''${label_devices[$swap_label]}" ]] \
+      || fail "$root_label and $swap_label labels resolve to the same device"
+    [[ ''${label_devices[$boot_label]} != "''${label_devices[$swap_label]}" ]] \
+      || fail "$boot_label and $swap_label labels resolve to the same device"
+
+    check_mount() {
+      local mountpoint=$1 label=$2 expected_type=$3 source filesystem_type
+      source=$(findmnt --noheadings --output SOURCE --mountpoint "$mountpoint" 2>/dev/null) \
+        || fail "$mountpoint is not mounted"
+      filesystem_type=$(findmnt --noheadings --output FSTYPE --mountpoint "$mountpoint")
+      [[ $(readlink -f "$source") == "''${label_devices[$label]}" ]] \
+        || fail "$mountpoint is not mounted from the '$label' filesystem"
+      [[ $filesystem_type == "$expected_type" ]] \
+        || fail "$mountpoint must use $expected_type, found $filesystem_type"
+    }
+
+    root_mount_path=$(readlink -f "''${target_root%/}$root_mount_point")
+    boot_mount_path=$(readlink -f "''${target_root%/}$boot_mount_point")
+    check_mount "$root_mount_path" "$root_label" "$root_filesystem_type"
+    check_mount "$boot_mount_path" "$boot_label" "$boot_filesystem_type"
+
+    is_swap_active=0
+    while IFS= read -r swap_device; do
+      if [[ $(readlink -f "$swap_device") == "''${label_devices[$swap_label]}" ]]; then
+        is_swap_active=1
+        break
+      fi
+    done < <(swapon --noheadings --raw --show=NAME)
+    ((is_swap_active)) || fail "the filesystem labeled '$swap_label' is not active"
+
+    if [[ -z $machine_hostname ]]; then
+      if ((should_only_check == 0)); then
+        read -r -p "Hostname: " machine_hostname
+      fi
+    fi
+
+    if [[ -n $machine_hostname ]]; then
+      [[ $machine_hostname =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]] \
+        || fail "hostname must contain 1-63 lowercase letters, numbers, or internal hyphens"
+
+      machine_dir="$repo_root/hosts/$machine_hostname"
+      [[ -f $machine_dir/default.nix ]] || fail "host is not declared: $machine_hostname"
+      [[ -f $machine_dir/hardware-configuration.nix ]] \
+        || fail "host is missing hardware-configuration.nix: $machine_hostname"
+      declared_hosts=$(nix eval --json "$repo_root#nixosConfigurations" --apply builtins.attrNames) \
+        || fail "could not read declared hosts from the flake"
+      jq -e --arg hostname "$machine_hostname" 'index($hostname) != null' <<<"$declared_hosts" >/dev/null \
+        || fail "host is missing from nixosConfigurations: $machine_hostname"
+    fi
+
+    printf '%s\n' "Preflight passed: labeled storage, mounts, swap, and UEFI are ready."
+    ((should_only_check == 0)) || exit 0
+
+    hardware_tmp=$(mktemp)
+    cleanup() {
+      rm -f "$hardware_tmp"
+    }
+    trap cleanup EXIT
+
+    nixos-generate-config \
+      --root "$target_root" \
+      --no-filesystems \
+      --show-hardware-config >"$hardware_tmp"
+    install -m 0644 "$hardware_tmp" "$machine_dir/hardware-configuration.nix"
+
+    printf "Installing '%s'...\n" "$machine_hostname"
+    nixos-install \
+      --root "$target_root" \
+      --flake "$repo_root#$machine_hostname" \
+      --no-root-passwd
+
+    chown "$user_uid:$user_gid" "$target_home"
+    chown -R "$user_uid:$user_gid" "$repo_root"
+
+    printf "Set the %s login password.\n" "$user_name"
+    nixos-enter --root "$target_root" -- passwd "$user_name"
+
+    printf '%s\n' "Installation complete. Review the generated hardware file, then reboot when ready."
+  '';
+}

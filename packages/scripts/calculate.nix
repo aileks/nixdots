@@ -1,0 +1,30 @@
+{ pkgs, scripts }:
+pkgs.writeShellApplication {
+  name = "calculate";
+  runtimeInputs = [
+    scripts.desktop-feedback
+    pkgs.coreutils
+    pkgs.dmenu
+    pkgs.libqalculate
+    pkgs.xclip
+  ];
+  text = pkgs.lib.removeSuffix "\n" ''
+    set -Eeuo pipefail
+
+    expression=$(dmenu -p Calculate </dev/null) || exit 0
+    [[ -n $expression ]] || exit 0
+    directory=$(mktemp -d "''${XDG_RUNTIME_DIR:?}/calculate.XXXXXXXX")
+    trap 'rm -rf -- "$directory"' EXIT
+    if ! timeout 5 qalc --defaults --terse -- "$expression" >"$directory/result" 2>"$directory/error" \
+      || [[ -s $directory/error || ! -s $directory/result ]]; then
+      desktop-feedback status 'Calculation failed'
+      exit 1
+    fi
+
+    result=$(<"$directory/result")
+    selected=$(dmenu -p 'Enter to copy' <<<"$result") || exit 0
+    [[ $selected == "$result" ]] || exit 0
+    xclip -selection clipboard -in <"$directory/result"
+    desktop-feedback status 'Result copied'
+  '';
+}

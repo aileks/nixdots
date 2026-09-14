@@ -1,4 +1,3 @@
-# Palette and roles from Projects/cinder-grove.nvim.
 {
   background = "#131210";
   container = "#1B1916";
@@ -16,4 +15,8 @@
   blue = "#6785A1";
   purple = "#9A788F";
   cyan = "#58918C";
+  selectionBackground = "#34312d";
+  subduedOrange = "#C87546";
+  brightYellow = "#E8A64D";
+  brightOrange = "#DC8853";
 }

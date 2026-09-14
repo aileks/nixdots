@@ -1,152 +1,181 @@
 # NixOS dotfiles
 
-NixOS (unstable) setup with Home Manager and Flakes.
+NixOS unstable with Flakes and Home Manager built around [oxwm](https://github.com/tonybanters/oxwm)
 
 ## Install
 
-Boot a NixOS live ISO in UEFI mode. Prepare an ext4 root filesystem labeled
-`nixos`, a FAT EFI filesystem labeled `boot`, and swap labeled `swap`. Mount root
-at `/mnt`, mount the EFI filesystem at `/mnt/boot`, and activate swap before
-running the installer.
+Boot a NixOS live ISO in UEFI mode and prepare the storage:
 
-The declared host is `hexghost`. Add a host configuration and flake entry before
-installing another host.
+| Filesystem        | Label   | Before installing      |
+| ----------------- | ------- | ---------------------- |
+| ext4 root         | `nixos` | Mount at `/mnt`        |
+| FAT EFI partition | `boot`  | Mount at `/mnt/boot`   |
+| Swap              | `swap`  | Activate with `swapon` |
+
+Clone into the target user's home, then run the preflight and installer:
 
 ```bash
 sudo mkdir -p /mnt/home/<your user>
-sudo git clone --recurse-submodules https://github.com/aileks/nixdots.git /mnt/home/<your user>/.dotfiles
+sudo git clone https://github.com/<your user>/nixdots.git /mnt/home/<your user>/.dotfiles
 cd /mnt/home/<your user>/.dotfiles
-sudo ./bin/install --hostname your-hostname --check-only
-sudo ./bin/install --hostname your-hostname
+
+sudo nix --extra-experimental-features 'nix-command flakes' run .#install -- --hostname <your host> --check-only
+sudo nix --extra-experimental-features 'nix-command flakes' run .#install -- --hostname <your host>
 ```
 
-## Rebuild
+For another host, add its directory under `hosts/` and its name to `hostNames` in `flake.nix`. `hexghost` includes NVIDIA and physical monitor settings; a VM without GPU passthrough needs settings for its virtual GPU before installation. Update user in [installation.nix](installation.nix).
 
-On the installed system, apply configuration changes with:
+## Desktop shortcuts
 
-```bash
-sudo nixos-rebuild switch --flake "$HOME/.dotfiles#your-hostname"
-```
+`Mod` is Super. These bindings are defined in
+[home/oxwm/config.nix](home/oxwm/config.nix).
 
-## Keybinds
+### Launchers and applications
 
-> [!NOTE]  
-> `Mod` is the Super key.
+| Shortcut             | Action                                                                  |
+| -------------------- | ----------------------------------------------------------------------- |
+| `Mod + Space`        | Search applications with dmenu                                          |
+| `Mod + Ctrl + Space` | Desktop actions: OCR, QR, reminders, notifications, network, calculator |
+| `Mod + Return`       | Open a WezTerm mux terminal                                             |
+| `Mod + T`            | Choose a terminal project or workspace                                  |
+| `Mod + W`            | Open Zen                                                                |
+| `Mod + X`            | Open a Doom Emacs frame                                                 |
+| `Mod + E`            | Open Yazi in WezTerm                                                    |
+| `Mod + S`            | Open Signal                                                             |
+| `Mod + A`            | Open Wiremix                                                            |
+| `Mod + M`            | Open Fastmail in Zen                                                    |
+| `Mod + V`            | Choose from clipboard history with clipmenu                             |
+| `Mod + ;`            | Pick an emoji                                                           |
+| `Mod + O`            | Pick a color                                                            |
+| `Mod + Ctrl + R`     | Manage reminders                                                        |
+| `Mod + =`            | Calculate an expression                                                 |
 
-### Apps and tools
+### Windows and layouts
 
-| Keys                 | Action                         |
-| -------------------- | ------------------------------ |
-| `Mod + Space`        | application menu (wmenu)       |
-| `Mod + Ctrl + Space` | desktop actions menu           |
-| `Mod + Return`       | WezTerm mux terminal           |
-| `Mod + T`            | WezTerm project/workspace menu |
-| `Mod + W`            | browser (Zen)                  |
-| `Mod + E`            | file manager (Yazi in WezTerm) |
-| `Mod + S`            | Signal                         |
-| `Mod + A`            | audio mixer (Wiremix)          |
-| `Mod + M`            | Fastmail                       |
-| `Mod + V`            | clipboard history (cliphist)   |
-| `Mod + ;`            | emoji picker (bemoji)          |
-| `Mod + O`            | color picker                   |
-| `Mod + Ctrl + R`     | reminders menu                 |
-| `Mod + =`            | quick calculate                |
-| `Mod + Shift + P`    | power menu                     |
-
-### Capture
-
-| Keys                  | Action                     |
-| --------------------- | -------------------------- |
-| `Print`               | screenshot region          |
-| `Ctrl + Print`        | screenshot focused window  |
-| `Shift + Print`       | screenshot full screen     |
-| `Mod + Shift + O`     | OCR scan + copy            |
-| `Mod + Ctrl + O`      | QR code scan + copy        |
-| `Mod + R`             | recording menu             |
-| `Mod + Print`         | record screen region       |
-| `Mod + Shift + Print` | record the focused monitor |
-
-### Session
-
-| Keys                     | Action                        |
-| ------------------------ | ----------------------------- |
-| `Mod + Esc`              | lock session                  |
-| `Mod + N`                | toggle do not disturb (dunst) |
-| `Mod + Shift + N`        | notification history          |
-| `Mod + Ctrl + Shift + N` | notification actions and URLs |
-| `Mod + Ctrl + N`         | toggle night light            |
-| `Mod + Shift + R`        | reload Mango configuration    |
-| `Mod + Shift + Q`        | quit Mango                    |
-
-### Windows
-
-| Keys                                  | Action                                 |
-| ------------------------------------- | -------------------------------------- |
-| `Mod + Q`                             | close window                           |
-| `Mod + F`                             | toggle fullscreen                      |
-| `Mod + Shift + Space`                 | toggle floating                        |
-| `Mod + J` / `Mod + K`                 | focus next or previous window          |
-| `Mod + Shift + J` / `Mod + Shift + K` | exchange with next or previous window  |
-| `Mod + Shift + Return`                | move window to master                  |
-| `Mod + I` / `Mod + Shift + I`         | add or remove a master slot            |
-| `Mod + Ctrl + J` / `Mod + Ctrl + K`   | increase or decrease window height     |
-| `Mod + H` / `Mod + L`                 | shrink or grow master horizontally     |
-| `Mod + Ctrl + Return`                 | reset focused tiled window proportions |
-| `Mod + Backtick`                      | toggle scratchpad                      |
-| `Mod + Shift + Backtick`              | minimize window                        |
-| `Mod + Ctrl + Backtick`               | restore a minimized window             |
-| `Mod + Left drag`                     | move window                            |
-| `Mod + Right drag`                    | resize window                          |
-| `Mod + Middle click`                  | toggle floating                        |
-| `Mod + Scroll up/down`                | focus previous or next window          |
+| Shortcut                      | Action                                          |
+| ----------------------------- | ----------------------------------------------- |
+| `Mod + Q`                     | Close the focused window                        |
+| `Mod + F`                     | Toggle fullscreen                               |
+| `Mod + Shift + Space`         | Toggle floating                                 |
+| `Mod + J` / `K`               | Focus the next / previous window                |
+| `Mod + Shift + J` / `K`       | Move the window forward / backward in the stack |
+| `Mod + Ctrl + H` / `L`        | Shrink / grow the master area                   |
+| `Mod + I` / `Mod + Shift + I` | Add / remove a master slot                      |
+| `Mod + C`                     | Use the tiling layout                           |
+| `Mod + Shift + C`             | Use the monocle layout                          |
+| `Mod + B`                     | Show or hide the bar                            |
 
 ### Tags and monitors
 
-| Keys                                  | Action                               |
-| ------------------------------------- | ------------------------------------ |
-| `Mod + 1..8`                          | view tag                             |
-| `Mod + Ctrl + 1..8`                   | toggle tag visibility                |
-| `Mod + Shift + 1..8`                  | move window to tag                   |
-| `Mod + Ctrl + Shift + 1..8`           | toggle window membership of tag      |
-| `Mod + Tab`                           | return to previous tag view          |
-| `Mod + ,` / `Mod + .`                 | focus left or right monitor          |
-| `Mod + Shift + ,` / `Mod + Shift + .` | send window to left or right monitor |
-| `Mod + Ctrl + M`                      | monitor menu                         |
+| Shortcut                    | Action                                         |
+| --------------------------- | ---------------------------------------------- |
+| `Mod + 1..7`                | View a tag                                     |
+| `Mod + Ctrl + 1..7`         | Toggle a tag's visibility                      |
+| `Mod + Shift + 1..7`        | Move the focused window to a tag               |
+| `Mod + Ctrl + Shift + 1..7` | Toggle the window's membership in a tag        |
+| `Mod + Tab`                 | Return to the previous tag view                |
+| `Mod + ,` / `.`             | Focus the previous / next monitor              |
+| `Mod + Shift + ,` / `.`     | Send the window to the previous / next monitor |
 
-### Media and brightness
+### Screenshots and recording
 
-| Keys                         | Action                                |
-| ---------------------------- | ------------------------------------- |
-| `Volume Up / Down / Mute`    | output volume                         |
-| `Mic Mute`                   | microphone mute                       |
-| `Play / Pause / Next / Prev` | media player control (playerctl)      |
-| `Brightness Up / Down`       | external monitor brightness (ddcutil) |
+| Shortcut              | Action                                             |
+| --------------------- | -------------------------------------------------- |
+| `Print`               | Select a screenshot region                         |
+| `Ctrl + Print`        | Capture the focused window                         |
+| `Shift + Print`       | Capture the entire desktop                         |
+| `Mod + Shift + O`     | Select text with OCR and copy it                   |
+| `Mod + Ctrl + O`      | Scan a QR code and copy its contents               |
+| `Mod + R`             | Choose recording mode and audio, or stop recording |
+| `Mod + Print`         | Record a selected region                           |
+| `Mod + Shift + Print` | Record the monitor under the pointer               |
+
+Screenshots are saved under `Pictures/Screenshots` and copied to the X11
+clipboard. Recordings go under `Videos/Recordings`; both locations follow the
+configured XDG user directories. Recording regions must fit within one monitor.
+OCR and QR results use the ordinary clipboard and can appear in clipboard history.
+
+### Session and notifications
+
+| Shortcut                 | Action                             |
+| ------------------------ | ---------------------------------- |
+| `Mod + Esc`              | Lock the session                   |
+| `Mod + Shift + P`        | Open the power menu                |
+| `Mod + N`                | Toggle do not disturb              |
+| `Mod + Shift + N`        | Browse notification history        |
+| `Mod + Ctrl + Shift + N` | Open notification actions and URLs |
+| `Mod + Ctrl + N`         | Toggle night light                 |
+| `Mod + Shift + R`        | Reload oxwm configuration          |
+| `Mod + Shift + Q`        | End the oxwm session               |
+
+### Hardware keys
+
+| Key                     | Action                                  |
+| ----------------------- | --------------------------------------- |
+| Volume up / down / mute | Adjust or mute the output               |
+| Microphone mute         | Toggle microphone mute                  |
+| Play / pause            | Toggle playback through playerctl       |
+| Next / previous         | Change media track                      |
+| Brightness up / down    | Adjust external monitors through DDC/CI |
+
+### Bar controls
+
+| Click                     | Action                                  |
+| ------------------------- | --------------------------------------- |
+| Notification indicator    | Open notification history               |
+| Network                   | Open NetworkManager's terminal UI       |
+| Volume                    | Toggle output mute                      |
+| CPU temperature or memory | Open btop                               |
+| GPU                       | Open nvtop                              |
+| Clock                     | Switch between 12-hour and 24-hour time |
+
+## Terminal and file manager
 
 ### WezTerm
 
-`Leader` is `Ctrl + Space
+Press `Ctrl + Space` for `Leader`, then the next key within one second.
+Workspace bindings are defined in
+[home/apps/wezterm-mux.nix](home/apps/wezterm-mux.nix).
 
-| Keys                    | Action                                    |
-| ----------------------- | ----------------------------------------- |
-| `Leader`, `c`           | new tab                                   |
-| `Leader`, `n` / `p`     | next or previous tab                      |
-| `Leader`, `Space`       | return to last tab                        |
-| `Leader`, `1..9`        | select tab                                |
-| `Leader`, `-`           | split into top and bottom panes           |
-| `Leader`, `\|`          | split into left and right panes           |
-| `Leader`, `v`           | enter copy mode                           |
-| `Leader`, `s`           | choose an existing workspace              |
-| `Leader`, `w`           | fuzzy tab picker                          |
-| `Leader`, `o`           | project/workspace menu                    |
-| `Leader`, `^`           | return to previous workspace              |
-| `Leader`, `d`           | detach from the current domain            |
-| `Alt + H/J/K/L`         | focus left/down/up/right pane             |
-| `Alt + Shift + H/J/K/L` | resize pane left/down/up/right by 5 cells |
+| Shortcut                 | Action                                  |
+| ------------------------ | --------------------------------------- |
+| `Leader`, `c`            | Create a tab                            |
+| `Leader`, `n` / `p`      | Select the next / previous tab          |
+| `Leader`, `Space`        | Return to the last tab                  |
+| `Leader`, `1..9`         | Select a numbered tab                   |
+| `Leader`, `-`            | Split into top and bottom panes         |
+| `Leader`, `\|`           | Split into left and right panes         |
+| `Leader`, `v`            | Enter copy mode                         |
+| `Leader`, `s`            | Choose an existing workspace            |
+| `Leader`, `w`            | Search tabs                             |
+| `Leader`, `o`            | Choose a project or workspace           |
+| `Leader`, `^`            | Return to the previous workspace        |
+| `Leader`, `d`            | Detach and keep the mux session running |
+| `Leader`, `Ctrl + Space` | Send a literal `Ctrl + Space`           |
+| `Alt + H/J/K/L`          | Focus the left/down/up/right pane       |
+| `Alt + Shift + H/J/K/L`  | Resize in that direction by five cells  |
+
+Use detach when you want to leave terminal work running. Project search roots
+and always-listed repositories are configured in [home/scripts.nix](home/scripts.nix).
 
 ### Yazi
 
-| Keys            | Action                            |
-| --------------- | --------------------------------- |
-| `g, b`          | open bookmarks and mounted drives |
-| `D` or `Delete` | trash selected files              |
-| `e`             | edit selected files in Neovim     |
+| Shortcut        | Action                                |
+| --------------- | ------------------------------------- |
+| `g`, `b`        | Browse bookmarks and mounted drives   |
+| `D` or `Delete` | Move selected files to trash          |
+| `e`             | Edit selected files in minimal Neovim |
+
+## Configuration locations
+
+| Path                                             | Controls                                                     |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| [installation.nix](installation.nix)             | Account and storage defaults                                 |
+| [hosts/hexghost/](hosts/hexghost/)               | Hardware, NVIDIA, and monitor policy                         |
+| [modules/xorg.nix](modules/xorg.nix)             | Xorg, Ly session registration, and keyboard mapping          |
+| [home/oxwm/](home/oxwm/)                         | oxwm configuration and session startup                       |
+| [home/session.nix](home/session.nix)             | Desktop services, locking, wallpaper, and clipboard          |
+| [home/apps/](home/apps/)                         | Bash, editors, terminal, and other application configuration |
+| [theme/cinder-grove.nix](theme/cinder-grove.nix) | Shared color palette                                         |
+| [packages/scripts/](packages/scripts/)           | Packaged desktop and command-line scripts                    |
+| [checks/](checks/)                               | Generated configuration, script, and X11 checks              |

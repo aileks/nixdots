@@ -1,0 +1,10 @@
+''
+  default partial alphanumeric_keys modifier_keys
+  xkb_symbols "basic" {
+      include "us(basic)"
+      replace key <CAPS> { [ Control_R ], type[group1] = "ONE_LEVEL" };
+      replace key <RCTL> { [ Caps_Lock ], type[group1] = "ONE_LEVEL" };
+      modifier_map Control { <CAPS> };
+      modifier_map Lock { <RCTL> };
+  };
+''

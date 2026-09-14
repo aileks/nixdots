@@ -1,4 +1,0 @@
-set -euo pipefail
-
-# Type=forking waits for swaylock to secure the session before returning.
-exec systemctl --user start session-lock.service

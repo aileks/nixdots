@@ -1,0 +1,93 @@
+{ ... }:
+let
+  colors = import ../../theme/cinder-grove.nix;
+in
+{
+  xdg.configFile."fastfetch/config.jsonc".text = ''
+    {
+      "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+      "logo": {
+        "source": "NixOS_small",
+        "padding": {
+          "top": 5,
+          "right": 6,
+        },
+      },
+      "modules": [
+        "break",
+        {
+          "type": "host",
+          "key": " host",
+          "keyColor": "green",
+        },
+        {
+          "type": "cpu",
+          "key": " cpu",
+          "showPeCoreCount": true,
+          "keyColor": "green",
+        },
+        {
+          "type": "memory",
+          "key": " memory",
+          "keyColor": "green",
+        },
+        {
+          "type": "disk",
+          "key": "󰋊 disk",
+          "keyColor": "green",
+        },
+        {
+          "type": "custom",
+          "format": "\u001b[90m┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈",
+        },
+        {
+          "type": "os",
+          "key": " os",
+          "keyColor": "yellow",
+        },
+        {
+          "type": "kernel",
+          "key": " kernel",
+          "keyColor": "yellow",
+        },
+        {
+          "type": "command",
+          "key": "󰏖 pkgs",
+          "keyColor": "yellow",
+          "text": "nix-store -q --requisites /run/current-system/sw | wc -l",
+        },
+        {
+          "type": "shell",
+          "key": " shell",
+          "keyColor": "yellow",
+        },
+        {
+          "type": "wm",
+          "key": "󰖯 wm",
+          "keyColor": "yellow",
+        },
+        {
+          "type": "terminal",
+          "key": " term",
+          "keyColor": "yellow",
+        },
+        {
+          "type": "custom",
+          "format": "\u001b[90m┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈",
+        },
+        {
+          "type": "command",
+          "key": "󰃭 age",
+          "keyColor": "red",
+          "text": "birth=$(stat -c %W /nix/store 2>/dev/null); if [ \"''${birth:-0}\" -gt 0 ] 2>/dev/null; then days=$(( ($(date +%s) - $(date -d \"$(date -d \"@$birth\" +%F)\" +%s)) / 86400 )); if [ \"$days\" -eq 1 ]; then echo \"1 day\"; else echo \"$days days\"; fi; else echo unknown; fi",
+        },
+        {
+          "type": "uptime",
+          "key": " uptime",
+          "keyColor": "red",
+        },
+        "break",
+      ],
+    }
+  '';
+}

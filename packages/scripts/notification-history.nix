@@ -1,0 +1,39 @@
+{ pkgs, scripts }:
+pkgs.writeShellApplication {
+  name = "notification-history";
+  runtimeInputs = [
+    scripts.desktop-feedback
+    pkgs.dunst
+    pkgs.jq
+    pkgs.dmenu
+    pkgs.gnugrep
+  ];
+  text = pkgs.lib.removeSuffix "\n" ''
+    set -Eeuo pipefail
+
+    if ! history=$(dunstctl history); then
+      desktop-feedback status 'Notification history unavailable'
+      exit 1
+    fi
+
+    if ! rows=$(jq -r '.data[0][] | "\(.id.data)  \(.appname.data | gsub("[\\r\\n\\t]"; " ")): \(.summary.data | gsub("[\\r\\n\\t]"; " "))"' <<<"$history" 2>/dev/null); then
+      desktop-feedback status 'Notification history unavailable'
+      exit 1
+    fi
+
+    if [[ -z $rows ]]; then
+      desktop-feedback status 'No notification history'
+      exit 0
+    fi
+
+    selected=$(dmenu -i -p Notifications <<<"$rows") || exit 0
+    if ! grep -Fxq -- "$selected" <<<"$rows"; then
+      exit 0
+    fi
+
+    identifier=''${selected%% *}
+    if ! dunstctl history-pop "$identifier"; then
+      desktop-feedback status 'Notification is no longer available'
+    fi
+  '';
+}
